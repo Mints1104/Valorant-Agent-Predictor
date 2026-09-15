@@ -9,6 +9,9 @@ __pycache__/
 venv/
 .ipynb_checkpoints/
 
+# Kaggle credentials — never commit your API token
+kaggle.json
+
 # OS
 .DS_Store
 Thumbs.db

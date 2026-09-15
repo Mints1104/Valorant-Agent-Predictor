@@ -12,7 +12,7 @@ You'll need a Kaggle account and API token (`~/.kaggle/kaggle.json`) the first t
 
 ## Dataset 1 — VCT 2025, all events (international + regional)
 
-Kaggle dataset: `<TODO: paste the exact slug from the dataset's Kaggle page — check the "Copy API command" button>`
+Kaggle dataset: [`piyush86kumar/valorant-vct-2025-all-events`](https://www.kaggle.com/datasets/piyush86kumar/valorant-vct-2025-all-events) — "Valorant 2025 - All Events International + Regional"
 
 Local folder this maps to: `Valorant_2025_All_Events_International_Regional/`
 
@@ -20,18 +20,16 @@ Local folder this maps to: `Valorant_2025_All_Events_International_Regional/`
 import kagglehub
 from kagglehub import KaggleDatasetAdapter
 
-df = kagglehub.load_dataset(
+df = kagglehub.dataset_load(
     KaggleDatasetAdapter.PANDAS,
-    "<owner>/<dataset-slug>",
-    "<event folder>/<file>.csv",  # e.g. "VCT 2025 Americas Stage 1_csvs/matches.csv"
+    "piyush86kumar/valorant-vct-2025-all-events",
+    "VCT 2025 Americas Stage 1_csvs/matches.csv",  # path within the dataset
 )
 ```
 
 ## Dataset 2 — VCT 2021-2026
 
-Kaggle dataset: `ryanluong1/valorant-champion-tour-2021-2023-data`
-
-> **Verify before using:** this slug is the 2021-2023 version. The local folder here is named `2021-2026`, which suggests a newer/renamed version of the same dataset — check the dataset's Kaggle page and update the slug above if it differs.
+Kaggle dataset: [`ryanluong1/valorant-champion-tour-2021-2023-data`](https://www.kaggle.com/datasets/ryanluong1/valorant-champion-tour-2021-2023-data) — the dataset's slug still says `2021-2023` (Kaggle doesn't rename slugs when a dataset is updated), but the page title is "Valorant Champion Tour 2021-2026 Data" and it now covers 2021-2026. Use the slug below as-is.
 
 Local folder this maps to: `Valorant_Champion_Tour_2021-2026_Data/`
 
@@ -41,7 +39,7 @@ from kagglehub import KaggleDatasetAdapter
 
 file_path = "vct_2025/agents/teams_picked_agents.csv"  # path within the dataset
 
-df = kagglehub.load_dataset(
+df = kagglehub.dataset_load(
     KaggleDatasetAdapter.PANDAS,
     "ryanluong1/valorant-champion-tour-2021-2023-data",
     file_path,
