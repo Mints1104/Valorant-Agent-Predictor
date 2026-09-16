@@ -11,6 +11,7 @@ venv/
 
 # Kaggle credentials — never commit your API token
 kaggle.json
+.env
 
 # Word lock/temp files
 ~$*.docx

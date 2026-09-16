@@ -56,6 +56,37 @@ Key files for the composition-synergy / win-prediction angle:
 
 Avoid loading `kills.csv` / `rounds_kills.csv` for 2021-2022 unless you need round-by-round detail — they're the largest files (120-150MB each) and are overkill for match/map-level analysis.
 
+## Match dates (the two datasets share a match ID space)
+
+Dataset 2 has **no date column in any of its 21 tables** — verified by scanning
+every file. That's a problem, because a chronological train/test split is what
+stops patch/meta leakage between train and test.
+
+Dataset 1 supplies the missing dates. Both are scraped from vlr.gg, so the IDs
+line up: `match_id` in Dataset 1 is the same value as `Match ID` in Dataset 2's
+`ids/tournaments_stages_matches_games_ids.csv`. Verified for 2025 — all 503
+Dataset 2 matches get a date, every tournament at 100% coverage.
+
+Use [`src/dates.py`](../src/dates.py):
+
+```python
+from dates import load_match_dates
+
+dates = load_match_dates()   # match_id, match_date, match_datetime, event, stage, week
+```
+
+Two gotchas it handles, both worth knowing about:
+
+- **8 dates don't parse raw.** vlr.gg shows a "Today"/"Yesterday" badge on recent
+  matches and the scrape glued it onto the string (`"Sun, October 5, 2025Today"`).
+  Stripping that suffix leaves 0 failures, and weekday names then agree with the
+  parsed dates on all 504 rows.
+- **Ties.** 10 rows share an exact timestamp (concurrent matches on different
+  streams), so sort by `(match_datetime, match_id)` for a stable order.
+
+`match_id` correlates with time (Spearman 0.979) but is **not** monotonic — it
+decreases against the clock in 182 places — so order by the date, not the ID.
+
 ## Column reference
 
 See [`columns_description.csv`](../columns_description.csv) (tracked in the repo) for the field-by-field dictionary — it's small and mostly still applies to Dataset 2's equivalent tables, though some column names differ slightly (check headers when in doubt).
