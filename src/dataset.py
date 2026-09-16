@@ -1,0 +1,143 @@
+"""Builds the main table: one row per map played, with both teams' agent picks,
+who chose the map, and who won.
+
+This is the table the models are trained on. It applies the clean-up rules
+worked out in notebooks/01_eda.ipynb, all of which are needed for correct
+results rather than being tidying-up:
+
+  1. overview.csv mixes whole-match summary rows ("All Maps") in with the
+     real per-map rows, so those are dropped.
+  2. The same file repeats every player three times (whole map, attacking
+     half, defending half), so only the whole-map rows are kept.
+  3. NRG is recorded under the name "Mega Minors" in the team columns, so
+     that name is corrected before anything is matched up by team name.
+  4. Five exhibition matches (all-star games and the like) are removed.
+"""
+
+import pandas as pd
+import kagglehub
+from kagglehub import KaggleDatasetAdapter
+
+from dates import load_match_dates
+
+PRIMARY = "ryanluong1/valorant-champion-tour-2021-2023-data"
+SEASON = "vct_2025"
+
+# The four columns that together identify one match in this dataset.
+MATCH_KEY = ["Tournament", "Stage", "Match Type", "Match Name"]
+
+# NRG appears under an old/alternate name in the team columns only.
+TEAM_ALIASES = {"Mega Minors": "NRG"}
+
+OUTPUT_COLUMNS = {
+    "Match ID": "match_id",
+    "Game ID": "game_id",
+    "match_datetime": "played_at",
+    "event": "event",
+    "Tournament": "tournament",
+    "Stage": "stage",
+    "Match Type": "match_type",
+    "Match Name": "match_name",
+    "Map": "map",
+    "Team A": "team_a",
+    "Team B": "team_b",
+    "comp_a": "comp_a",
+    "comp_b": "comp_b",
+    "map_picked_by": "map_picked_by",
+    "Team A Score": "score_a",
+    "Team B Score": "score_b",
+    "team_a_won": "team_a_won",
+}
+
+
+def load_primary(path: str) -> pd.DataFrame:
+    """Load one CSV from the main dataset. Downloads once, then reads from cache."""
+    return kagglehub.dataset_load(KaggleDatasetAdapter.PANDAS, PRIMARY, f"{SEASON}/{path}")
+
+
+def _team_compositions(overview: pd.DataFrame) -> pd.DataFrame:
+    """The five agents each team played, per map."""
+    per_map = overview["Map"].str.strip().str.lower() != "all maps"
+    whole_map_only = overview["Side"] == "both"
+
+    cleaned = overview[per_map & whole_map_only].copy()
+    cleaned["Team"] = cleaned["Team"].replace(TEAM_ALIASES)
+
+    return (
+        cleaned.groupby(MATCH_KEY + ["Map", "Team"])["Agents"]
+        .apply(lambda agents: tuple(sorted(agents)))
+        .rename("comp")
+        .reset_index()
+    )
+
+
+def build_map_table() -> pd.DataFrame:
+    """One row per map played in VCT 2025, ready for feature building.
+
+    Raises if any step loses or duplicates rows, since a silent change in row
+    count almost always means a name mismatch rather than a real gap.
+    """
+    maps_scores = load_primary("matches/maps_scores.csv")
+    scores = load_primary("matches/scores.csv")
+    ids = load_primary("ids/tournaments_stages_matches_games_ids.csv")
+    overview = load_primary("matches/overview.csv")
+    draft = load_primary("matches/draft_phase.csv")
+
+    # Exhibition matches are labelled as such and have made-up line-ups.
+    exhibitions = set(
+        map(tuple, scores[scores["Stage"] == "Showmatch"][MATCH_KEY].drop_duplicates().values)
+    )
+    table = maps_scores[
+        ~maps_scores.apply(lambda row: tuple(row[MATCH_KEY]) in exhibitions, axis=1)
+    ].copy()
+
+    expected_rows = len(table)
+
+    for column in ("Team A", "Team B"):
+        table[column] = table[column].replace(TEAM_ALIASES)
+
+    table = table.merge(ids[MATCH_KEY + ["Map", "Match ID", "Game ID"]],
+                        on=MATCH_KEY + ["Map"], how="left")
+
+    dates = load_match_dates()
+    table = table.merge(dates[["match_id", "match_datetime", "event"]],
+                        left_on="Match ID", right_on="match_id", how="left")
+
+    comps = _team_compositions(overview)
+    table = table.merge(comps.rename(columns={"Team": "Team A", "comp": "comp_a"}),
+                        on=MATCH_KEY + ["Map", "Team A"], how="left")
+    table = table.merge(comps.rename(columns={"Team": "Team B", "comp": "comp_b"}),
+                        on=MATCH_KEY + ["Map", "Team B"], how="left")
+
+    # Who chose this map. A match's final map is whatever is left after both
+    # teams have picked, so nobody picks it -- that is a real category here,
+    # not a gap in the data.
+    draft = draft.copy()
+    draft["Team"] = draft["Team"].replace(TEAM_ALIASES)
+    picks = (
+        draft[draft["Action"] == "pick"][MATCH_KEY + ["Map", "Team"]]
+        .rename(columns={"Team": "picked_by"})
+    )
+    table = table.merge(picks, on=MATCH_KEY + ["Map"], how="left")
+
+    table["map_picked_by"] = "decider"
+    table.loc[table["picked_by"] == table["Team A"], "map_picked_by"] = "team_a"
+    table.loc[table["picked_by"] == table["Team B"], "map_picked_by"] = "team_b"
+
+    table["team_a_won"] = (table["Team A Score"] > table["Team B Score"]).astype(int)
+
+    if len(table) != expected_rows:
+        msg = f"Row count changed while joining: {expected_rows} -> {len(table)}"
+        raise ValueError(msg)
+
+    missing = table[["Match ID", "match_datetime", "comp_a", "comp_b"]].isna().sum()
+    if missing.any():
+        msg = f"Unexpected gaps after joining:\n{missing[missing > 0]}"
+        raise ValueError(msg)
+
+    return (
+        table[list(OUTPUT_COLUMNS)]
+        .rename(columns=OUTPUT_COLUMNS)
+        .sort_values(["played_at", "match_id", "game_id"])
+        .reset_index(drop=True)
+    )
