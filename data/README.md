@@ -8,7 +8,21 @@ Raw data is **not** committed to this repo (see `.gitignore`) — it's pulled fr
 pip install kagglehub[pandas-datasets]
 ```
 
-You'll need a Kaggle account and API token (`~/.kaggle/kaggle.json`) the first time you run this — `kagglehub` will prompt for it.
+You'll need a Kaggle account and an API token the first time you run this.
+
+Kaggle now issues a single API token rather than the older username-plus-key pair. Generate
+one at [kaggle.com/settings/api](https://www.kaggle.com/settings/api) ("API Tokens →
+Generate New Token"), then save the token on its own in a plain text file at
+`~/.kaggle/access_token` (on Windows, `C:\Users\<you>\.kaggle\access_token`). `kagglehub`
+picks it up from there automatically — no environment variables needed.
+
+Two things that don't work, and cost time if you try them:
+
+- Putting the token in a `.env` file. Nothing here reads `.env`, so it's ignored silently.
+- Naming the variable `KAGGLE_API_KEY`. If you'd rather use an environment variable than a
+  file, the name `kagglehub` actually looks for is `KAGGLE_API_TOKEN`.
+
+The older `~/.kaggle/kaggle.json` still works if you already have one.
 
 ## Dataset 1 — VCT 2025, all events (international + regional)
 
