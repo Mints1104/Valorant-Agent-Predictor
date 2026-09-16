@@ -12,6 +12,14 @@ venv/
 # Kaggle credentials — never commit your API token
 kaggle.json
 
+# Word lock/temp files
+~$*.docx
+~WRL*.tmp
+
+# Other people's / the academy's material — not ours to publish
+Example proposal*.docx
+
+
 # OS
 .DS_Store
 Thumbs.db
