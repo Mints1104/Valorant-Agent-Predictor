@@ -184,3 +184,67 @@ def player_form(
         raise ValueError(msg)
 
     return form
+
+
+def current_team_form(
+    maps: pd.DataFrame,
+    half_life: float | None = None,
+    stats: dict[str, str] | None = None,
+) -> pd.DataFrame:
+    """Each team's form as it stands at the end of the data given.
+
+    Where `player_form` answers "how were these sides playing going into that
+    map", this answers "how is each team playing now", which is what a live
+    prediction needs. Returns one row per team, averaged across the five
+    players who most recently appeared for them, so a team that changed its
+    roster is judged on the players it currently fields.
+
+    Only for predicting matches after `maps` ends. Using it on a map inside
+    `maps` would be using that map's own result.
+    """
+    stats = stats or STATS
+    decay = _decay_for(half_life)
+
+    players = load_player_maps(maps)
+    ordered = players.sort_values(["played_at", "match_id"])
+
+    totals: dict[tuple[str, str], float] = {}
+    weights: dict[tuple[str, str], float] = {}
+    appearances: dict[str, int] = {}
+    latest_roster: dict[str, list[str]] = {}
+
+    for _, performance in ordered.iterrows():
+        name = performance["Player"]
+        appearances[name] = appearances.get(name, 0) + 1
+        for column in stats:
+            value = performance[column]
+            if pd.isna(value):
+                continue
+            key = (name, column)
+            totals[key] = totals.get(key, 0.0) * decay + float(value)
+            weights[key] = weights.get(key, 0.0) * decay + 1.0
+
+    # whoever played the team's most recent map is taken as its current roster
+    for team, rows in ordered.groupby("Team"):
+        last_map = rows.iloc[-1][["played_at", "match_id", "map"]]
+        final = rows[
+            (rows["played_at"] == last_map["played_at"])
+            & (rows["match_id"] == last_map["match_id"])
+            & (rows["map"] == last_map["map"])
+        ]
+        latest_roster[team] = sorted(final["Player"].unique())
+
+    rows = []
+    for team, roster in latest_roster.items():
+        entry = {"team": team, "players": ", ".join(roster), "roster_size": len(roster)}
+        for column, short in stats.items():
+            known = [
+                totals[(p, column)] / weights[(p, column)]
+                for p in roster
+                if weights.get((p, column), 0) > 0
+            ]
+            entry[short] = float(np.mean(known)) if known else np.nan
+        entry["maps_played"] = float(np.mean([appearances.get(p, 0) for p in roster]))
+        rows.append(entry)
+
+    return pd.DataFrame(rows).set_index("team").sort_index()
