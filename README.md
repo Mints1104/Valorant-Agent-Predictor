@@ -5,7 +5,8 @@ A data science project. Analyzes VALORANT Champions Tour (VCT) esports data to s
 > Status: in progress. Both research questions now have an answer. A model using only agent
 > picks scores 51.1% against a 55.5% baseline; adding how the ten players had been playing
 > takes it to 59.7%. No line-up wins more than its agents deserve once team strength is
-> accounted for. The test half has not been touched.
+> accounted for. A Streamlit app demonstrates the model live. The test half has not been
+> touched.
 
 ## Problem
 
@@ -41,8 +42,9 @@ that didn't exist yet and maps that have since left the pool.
 4. **First model, without player stats** — done. Logistic regression on agent picks, map and who chose the map: [`notebooks/04_baseline_model.ipynb`](notebooks/04_baseline_model.ipynb). Scores 51.4%, which loses to the baseline.
 5. **Second model, with player form** — done. [`notebooks/06_player_form_model.ipynb`](notebooks/06_player_form_model.ipynb), built by [`src/form.py`](src/form.py) and proved leak-free by [`test_form.py`](test_form.py). Scores 59.7%, which beats the baseline.
 6. **Composition synergy** — done. [`notebooks/07_composition_synergy.ipynb`](notebooks/07_composition_synergy.ipynb). No line-up over-performs once team strength is accounted for.
-7. **Error analysis, explainability, and the test half** — next.
-8. **Write-up** — what worked, what didn't, and the limitations.
+7. **Demo** — done. [`streamlit_app.py`](streamlit_app.py) predicts a map live and lets you watch the agent picks fail to matter.
+8. **Error analysis, explainability, and the test half** — next.
+9. **Write-up** — what worked, what didn't, and the limitations.
 
 ## What we've found so far
 
@@ -81,6 +83,27 @@ Measured by accuracy as the headline, with log loss alongside to check the proba
 
 The test half has not been touched.
 
+## The demo
+
+```bash
+.venv/Scripts/python.exe -m streamlit run streamlit_app.py
+```
+
+Pick two teams, a map, and who chose it, and it predicts the winner from the two features
+the model settled on.
+
+It loads **both** models side by side deliberately. Changing the agent line-ups swings the
+agent-picks model by twenty points or more while the player-form model does not move at
+all, because it never sees the agents. Changing a team does the reverse. That turns the
+project's main finding into something you can watch happen rather than something you have
+to assert — and the caption underneath points out that the number doing all the moving
+belongs to the model that loses to the baseline.
+
+The app states its own accuracy against both baselines and warns that four points over a
+one-sentence rule is a lean rather than a prediction. Team ratings shown there use the
+whole season, since a live prediction would be for a match played after all of it; the
+model itself was trained only on the first half.
+
 ## How the model is tested
 
 The season is split by **time**, not at random: learn from the 756 maps up to Masters
@@ -103,6 +126,8 @@ Capstone-Project/
 ├── requirements.txt              # project dependencies
 ├── test_data_pull.py             # smoke test: confirms kagglehub can fetch both datasets
 ├── test_form.py                  # proves the player-form feature only looks backwards
+├── streamlit_app.py              # the demo: live prediction, and the agent finding made visible
+├── .streamlit/config.toml        # theme for the demo
 ├── data/
 │   ├── README.md                 # how to fetch the raw data, and how dates are handled
 │   └── VCT_2025_DATA_SUMMARY.md  # file-by-file notes on what each CSV contains
