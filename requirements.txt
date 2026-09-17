@@ -2,6 +2,7 @@ kagglehub[pandas-datasets]
 pandas
 numpy
 scikit-learn
+scipy
 matplotlib
 seaborn
 jupyter

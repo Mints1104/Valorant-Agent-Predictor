@@ -2,10 +2,10 @@
 
 A data science project. Analyzes VALORANT Champions Tour (VCT) esports data to study **agent composition synergy / meta trends** and build a **match win-prediction model**.
 
-> Status: in progress. Data explored and cleaned, the main table built, line-ups turned
-> into numbers, and both models fitted. A model using agent picks scores 51.4% against a
-> 55.5% baseline; adding the players' form going into the match takes it to 57.8%. The
-> composition-synergy question is not started yet.
+> Status: in progress. Both research questions now have an answer. A model using only agent
+> picks scores 51.1% against a 55.5% baseline; adding how the ten players had been playing
+> takes it to 59.7%. No line-up wins more than its agents deserve once team strength is
+> accounted for. The test half has not been touched.
 
 ## Problem
 
@@ -39,9 +39,10 @@ that didn't exist yet and maps that have since left the pool.
 2. **Build the main table** — done. One row per map played: [`notebooks/02_build_map_table.ipynb`](notebooks/02_build_map_table.ipynb), assembled by [`src/dataset.py`](src/dataset.py).
 3. **Turn line-ups into numbers** — done. [`notebooks/03_agent_features.ipynb`](notebooks/03_agent_features.ipynb), built by [`src/features.py`](src/features.py).
 4. **First model, without player stats** — done. Logistic regression on agent picks, map and who chose the map: [`notebooks/04_baseline_model.ipynb`](notebooks/04_baseline_model.ipynb). Scores 51.4%, which loses to the baseline.
-5. **Player form** — rough check done, [`notebooks/05_player_form_probe.ipynb`](notebooks/05_player_form_probe.ipynb). Beats the baseline; needs building properly into `src/`.
-6. **Composition synergy** — not started. Which agent *combinations* do better than their individual parts suggest.
-7. **Write-up** — what worked, what didn't, and the limitations.
+5. **Second model, with player form** — done. [`notebooks/06_player_form_model.ipynb`](notebooks/06_player_form_model.ipynb), built by [`src/form.py`](src/form.py) and proved leak-free by [`test_form.py`](test_form.py). Scores 59.7%, which beats the baseline.
+6. **Composition synergy** — done. [`notebooks/07_composition_synergy.ipynb`](notebooks/07_composition_synergy.ipynb). No line-up over-performs once team strength is accounted for.
+7. **Error analysis, explainability, and the test half** — next.
+8. **Write-up** — what worked, what didn't, and the limitations.
 
 ## What we've found so far
 
@@ -67,12 +68,16 @@ That last point set expectations, and it held: a model built on agent picks alon
 | | Score |
 |---|---|
 | Baseline — guess whoever picked the map, team A on deciders | 55.5% |
-| Agent picks + map + who picked it | **51.4%** — loses to the baseline |
-| Players' form going in (rating difference) + who picked it | **57.8%** — beats it on 4 folds of 5 |
+| Agent picks + map + who picked it | **51.1%** — loses to the baseline |
+| Players' form going in (rating difference) + who picked it | **59.7%** — beats it on 4 folds of 5 |
 
-- **The agent columns actively cost accuracy.** On their own they manage 48.0% and never clear 50.7% on any fold — they fit patterns that don't survive into the next part of the season. Added to the player-form model they drop it from 57.8% to 53.1%. Three separate measurements now agree.
+Measured by accuracy as the headline, with log loss alongside to check the probabilities are honest. Saying "50/50" to every map scores 0.693 on log loss; the player-form model scores 0.678, and the agent-picks model scores **0.760 — worse than claiming to know nothing**, because it commits to answers it has no grounds for.
+
+- **The agent columns actively cost accuracy.** On their own they manage 48.0% and never clear 50.7% on any fold — they fit patterns that don't survive into the next part of the season. Added to the player-form model they drop it from 59.7% to 54.2%. Four separate measurements now agree.
 - **A team's raw prior win rate predicts nothing** (~51%). Too noisy: 42% of matches involve a team with fewer than 10 earlier maps.
-- **Players' historical ratings do predict.** Two columns beat the baseline, and more usefully they're *steady* — between 56.0% and 59.6% across every fold, where the baseline swings from 50.0% to 58.9%.
+- **Players' historical ratings do predict**, and recent form matters more than old form — accuracy rises steadily as older maps are faded out.
+- **No line-up wins more than its agents deserve.** Of 54 line-ups used ten or more times, two looked significant where chance alone gives 2.7, and none survived correcting for how many were tested. The apparent exceptions are teams rather than compositions: the best-looking line-up wins 65%, but Paper Rex plays 20 of its 43 maps and wins 75% with it while another team went 1–4 with the same five agents.
+- **That result comes with a limit worth stating.** Detecting a realistic five-point synergy effect would need around 784 maps of one exact line-up; the most-used line-up in the season has 86. So this is not evidence synergy doesn't exist — it's evidence a realistic effect is invisible in a single season, and that anything big enough to see here is more likely a strong roster than a strong composition.
 
 The test half has not been touched.
 
@@ -97,19 +102,23 @@ Capstone-Project/
 ├── columns_description.csv       # data dictionary
 ├── requirements.txt              # project dependencies
 ├── test_data_pull.py             # smoke test: confirms kagglehub can fetch both datasets
+├── test_form.py                  # proves the player-form feature only looks backwards
 ├── data/
 │   ├── README.md                 # how to fetch the raw data, and how dates are handled
 │   └── VCT_2025_DATA_SUMMARY.md  # file-by-file notes on what each CSV contains
 ├── src/
 │   ├── dates.py                  # match dates, bridged from the second dataset
 │   ├── dataset.py                # builds the main table (one row per map played)
-│   └── features.py               # turns line-ups into numbers a model can read
+│   ├── features.py               # turns line-ups into numbers a model can read
+│   └── form.py                   # how the ten players had been playing, earlier matches only
 ├── notebooks/
 │   ├── 01_eda.ipynb              # exploring the raw files, and the problems in them
 │   ├── 02_build_map_table.ipynb  # building and checking the main table
 │   ├── 03_agent_features.ipynb   # describing line-ups as numbers
 │   ├── 04_baseline_model.ipynb   # the model without player stats, and why it loses
-│   └── 05_player_form_probe.ipynb # rough check that player form predicts
+│   ├── 05_player_form_probe.ipynb # rough check that player form predicts
+│   ├── 06_player_form_model.ipynb # the model with player form, the real version
+│   └── 07_composition_synergy.ipynb # do line-ups over-perform their agents?
 ├── Valorant_2025_All_Events_International_Regional/   # gitignored, local only
 └── Valorant_Champion_Tour_2021-2026_Data/              # gitignored, local only
 ```
