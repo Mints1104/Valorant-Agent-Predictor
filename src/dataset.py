@@ -14,6 +14,7 @@ results rather than being tidying-up:
   4. Five exhibition matches (all-star games and the like) are removed.
 """
 
+import numpy as np
 import pandas as pd
 import kagglehub
 from kagglehub import KaggleDatasetAdapter
@@ -162,3 +163,31 @@ def split_season(maps: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     earlier = maps["played_at"] < SPLIT_DATE
     return maps[earlier].copy(), maps[~earlier].copy()
+
+
+N_FOLDS = 5
+
+
+def season_folds(maps: pd.DataFrame, n_folds: int = N_FOLDS):
+    """Split maps into growing train / next-chunk validation pairs, oldest first.
+
+    Cuts between matches rather than between maps, so no match ever has some of
+    its maps used for training and the rest for checking -- whichever team is
+    playing better on the night tends to take several maps, so a match split
+    across the line would flatter the score.
+
+    Yields pairs of row labels usable with .loc. Defined here rather than in a
+    notebook because more than one notebook needs it, and hand-copied logic is
+    how the split date drifted the first time.
+    """
+    in_order = maps.sort_values(["played_at", "match_id"])
+    matches = in_order["match_id"].drop_duplicates().to_numpy()
+    chunks = np.array_split(matches, n_folds + 1)
+
+    for fold in range(n_folds):
+        learn_ids = np.concatenate(chunks[: fold + 1])
+        check_ids = chunks[fold + 1]
+        yield (
+            maps.index[maps["match_id"].isin(learn_ids)],
+            maps.index[maps["match_id"].isin(check_ids)],
+        )

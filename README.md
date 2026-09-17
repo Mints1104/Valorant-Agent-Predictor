@@ -2,8 +2,10 @@
 
 A data science project. Analyzes VALORANT Champions Tour (VCT) esports data to study **agent composition synergy / meta trends** and build a **match win-prediction model**.
 
-> Status: in progress. Data explored and cleaned, the main table is built, and line-ups
-> have been turned into numbers ready for modelling. First model not fitted yet.
+> Status: in progress. Data explored and cleaned, the main table built, line-ups turned
+> into numbers, and both models fitted. A model using agent picks scores 51.4% against a
+> 55.5% baseline; adding the players' form going into the match takes it to 57.8%. The
+> composition-synergy question is not started yet.
 
 ## Problem
 
@@ -36,9 +38,9 @@ that didn't exist yet and maps that have since left the pool.
 1. **Explore and clean** — done. See [`notebooks/01_eda.ipynb`](notebooks/01_eda.ipynb).
 2. **Build the main table** — done. One row per map played: [`notebooks/02_build_map_table.ipynb`](notebooks/02_build_map_table.ipynb), assembled by [`src/dataset.py`](src/dataset.py).
 3. **Turn line-ups into numbers** — done. [`notebooks/03_agent_features.ipynb`](notebooks/03_agent_features.ipynb), built by [`src/features.py`](src/features.py).
-4. **First model** — next. Logistic regression on agent picks, map, and who chose the map.
-5. **Composition synergy** — which agent *combinations* do better than their individual parts suggest.
-6. **Team strength** — each team's record going into a match, built only from their earlier matches.
+4. **First model, without player stats** — done. Logistic regression on agent picks, map and who chose the map: [`notebooks/04_baseline_model.ipynb`](notebooks/04_baseline_model.ipynb). Scores 51.4%, which loses to the baseline.
+5. **Player form** — rough check done, [`notebooks/05_player_form_probe.ipynb`](notebooks/05_player_form_probe.ipynb). Beats the baseline; needs building properly into `src/`.
+6. **Composition synergy** — not started. Which agent *combinations* do better than their individual parts suggest.
 7. **Write-up** — what worked, what didn't, and the limitations.
 
 ## What we've found so far
@@ -58,7 +60,21 @@ that didn't exist yet and maps that have since left the pool.
 - Which agents get played shifts heavily across the year. Tejo goes from one of the most-played agents to almost none; Omen rises from roughly one line-up in ten to one in six.
 - **No single agent predicts winning.** Looking only at maps where one team had an agent and the other didn't, just 1 agent out of 27 has a win rate further from 50% than luck alone explains — and checking 27 things, that's exactly what chance produces. Teams also share about 3 of their 5 agents on a typical map, and on 99 maps the two line-ups were identical.
 
-That last point sets expectations: a model built on agent picks alone should land near a coin flip. A high score would mean a mistake, not a discovery.
+That last point set expectations, and it held: a model built on agent picks alone lands near a coin flip.
+
+**Model results so far**, all measured on time-ordered validation folds cut between matches, never inside one:
+
+| | Score |
+|---|---|
+| Baseline — guess whoever picked the map, team A on deciders | 55.5% |
+| Agent picks + map + who picked it | **51.4%** — loses to the baseline |
+| Players' form going in (rating difference) + who picked it | **57.8%** — beats it on 4 folds of 5 |
+
+- **The agent columns actively cost accuracy.** On their own they manage 48.0% and never clear 50.7% on any fold — they fit patterns that don't survive into the next part of the season. Added to the player-form model they drop it from 57.8% to 53.1%. Three separate measurements now agree.
+- **A team's raw prior win rate predicts nothing** (~51%). Too noisy: 42% of matches involve a team with fewer than 10 earlier maps.
+- **Players' historical ratings do predict.** Two columns beat the baseline, and more usefully they're *steady* — between 56.0% and 59.6% across every fold, where the baseline swings from 50.0% to 58.9%.
+
+The test half has not been touched.
 
 ## How the model is tested
 
@@ -91,7 +107,9 @@ Capstone-Project/
 ├── notebooks/
 │   ├── 01_eda.ipynb              # exploring the raw files, and the problems in them
 │   ├── 02_build_map_table.ipynb  # building and checking the main table
-│   └── 03_agent_features.ipynb   # describing line-ups as numbers
+│   ├── 03_agent_features.ipynb   # describing line-ups as numbers
+│   ├── 04_baseline_model.ipynb   # the model without player stats, and why it loses
+│   └── 05_player_form_probe.ipynb # rough check that player form predicts
 ├── Valorant_2025_All_Events_International_Regional/   # gitignored, local only
 └── Valorant_Champion_Tour_2021-2026_Data/              # gitignored, local only
 ```
