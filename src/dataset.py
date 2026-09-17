@@ -29,6 +29,16 @@ MATCH_KEY = ["Tournament", "Stage", "Match Type", "Match Name"]
 # NRG appears under an old/alternate name in the team columns only.
 TEAM_ALIASES = {"Mega Minors": "NRG"}
 
+# Where the season is cut in two. Everything before this date is learned from,
+# everything on or after it is held back for the final score.
+#
+# The date itself is arbitrary within a range: Masters Toronto finished on the
+# night of 22 June and the next tournament started on 4 July, so any date in
+# that gap gives the same 756 / 516 split. A date in the middle of the gap is
+# used rather than one right next to a match, so that it cannot be misread as
+# an off-by-one -- no tournament is ever cut in half.
+SPLIT_DATE = pd.Timestamp("2025-06-30")
+
 OUTPUT_COLUMNS = {
     "Match ID": "match_id",
     "Game ID": "game_id",
@@ -141,3 +151,14 @@ def build_map_table() -> pd.DataFrame:
         .sort_values(["played_at", "match_id", "game_id"])
         .reset_index(drop=True)
     )
+
+
+def split_season(maps: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Split the season into the part we learn from and the part we are scored on.
+
+    Returns (learn_from, test_on). Defined here so every notebook cuts the
+    season in the same place -- the date used to be written out by hand in each
+    one, which is exactly how they drift apart.
+    """
+    earlier = maps["played_at"] < SPLIT_DATE
+    return maps[earlier].copy(), maps[~earlier].copy()
