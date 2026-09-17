@@ -39,7 +39,7 @@ that didn't exist yet and maps that have since left the pool.
 1. **Explore and clean** — done. See [`notebooks/01_eda.ipynb`](notebooks/01_eda.ipynb).
 2. **Build the main table** — done. One row per map played: [`notebooks/02_build_map_table.ipynb`](notebooks/02_build_map_table.ipynb), assembled by [`src/dataset.py`](src/dataset.py).
 3. **Turn line-ups into numbers** — done. [`notebooks/03_agent_features.ipynb`](notebooks/03_agent_features.ipynb), built by [`src/features.py`](src/features.py).
-4. **First model, without player stats** — done. Logistic regression on agent picks, map and who chose the map: [`notebooks/04_baseline_model.ipynb`](notebooks/04_baseline_model.ipynb). Scores 51.4%, which loses to the baseline.
+4. **First model, without player stats** — done. Logistic regression on agent picks, map and who chose the map: [`notebooks/04_baseline_model.ipynb`](notebooks/04_baseline_model.ipynb). Scores 51.4% as fitted there, which loses to the baseline. (It appears as 51.1% in the results table below — same model, fitted with the columns put on a common scale so it can be compared fairly with the player-form model. Both figures are correct.)
 5. **Second model, with player form** — done. [`notebooks/06_player_form_model.ipynb`](notebooks/06_player_form_model.ipynb), built by [`src/form.py`](src/form.py) and proved leak-free by [`test_form.py`](test_form.py). Scores 59.7%, which beats the baseline.
 6. **Composition synergy** — done. [`notebooks/07_composition_synergy.ipynb`](notebooks/07_composition_synergy.ipynb). No line-up over-performs once team strength is accounted for.
 7. **Demo** — done. [`streamlit_app.py`](streamlit_app.py) predicts a map live and lets you watch the agent picks fail to matter.
@@ -59,7 +59,7 @@ that didn't exist yet and maps that have since left the pool.
 **Findings so far:**
 
 - Team A wins 51% of maps, so anything built has to beat a coin flip to be worth having.
-- The team that chose the map wins it 53.8% of the time — real, but only about four extra wins per hundred maps. As a rule a model can be measured against, where it also has to answer on the 18% of maps nobody picked (fall back to team A), it gets 54.6% right.
+- The team that chose the map wins it 53.8% of the time — real, but only about four extra wins per hundred maps. Turned into a rule that also has to answer on the 18% of maps nobody picked (fall back to team A), it gets 54.6% of the whole season right. The figure models are actually judged against is 55.5%, the same rule measured on the validation folds the models are scored on.
 - Which agents get played shifts heavily across the year. Tejo goes from one of the most-played agents to almost none; Omen rises from roughly one line-up in ten to one in six.
 - **No single agent predicts winning.** Looking only at maps where one team had an agent and the other didn't, just 1 agent out of 27 has a win rate further from 50% than luck alone explains — and checking 27 things, that's exactly what chance produces. Teams also share about 3 of their 5 agents on a typical map, and on 99 maps the two line-ups were identical.
 

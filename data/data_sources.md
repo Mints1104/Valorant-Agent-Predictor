@@ -19,7 +19,7 @@ Without any one of these there is no model at all.
 |---|---|---|
 | `matches/maps_scores.csv` | One row per map: both teams and the score | **This is the target.** `team_a_won` is worked out from the two score columns |
 | `matches/overview.csv` | Every player's agent on every map, plus how they performed | The five agents each side picked — the whole of question 1, and the input to the line-up features. Also the only honest source of per-map player form (see the ruled-out file below) |
-| `matches/draft_phase.csv` | The map pick and ban phase | Who chose each map. This single column is the baseline the model has to beat — 54.6% once the rule also has to answer on the 18% of maps nobody picked |
+| `matches/draft_phase.csv` | The map pick and ban phase | Who chose each map. This single column is the baseline the model has to beat — 55.5% on the validation folds, once the rule also has to answer on the 18% of maps nobody picked |
 | `ids/tournaments_stages_matches_games_ids.csv` | Match ID and Game ID for every map | The join key holding the other files together, **and** the bridge that lets dates from the second dataset attach to matches in the first |
 | `matches/scores.csv` | Match-level results and the stage each match sat in | The only file that labels exhibition matches as `Stage == "Showmatch"`. Five fake matches are removed using it |
 | `piyush86kumar/valorant-vct-2025-all-events` *(second dataset)* | Match dates | Nothing else in the project supplies a date. Without dates the season cannot be put in order, and without an order the train/test split is meaningless |
