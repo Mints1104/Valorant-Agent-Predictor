@@ -54,7 +54,7 @@ that didn't exist yet and maps that have since left the pool.
 **Findings so far:**
 
 - Team A wins 51% of maps, so anything built has to beat a coin flip to be worth having.
-- The team that chose the map wins it 53.8% of the time — real, but only about four extra wins per hundred maps.
+- The team that chose the map wins it 53.8% of the time — real, but only about four extra wins per hundred maps. As a rule a model can be measured against, where it also has to answer on the 18% of maps nobody picked (fall back to team A), it gets 54.6% right.
 - Which agents get played shifts heavily across the year. Tejo goes from one of the most-played agents to almost none; Omen rises from roughly one line-up in ten to one in six.
 - **No single agent predicts winning.** Looking only at maps where one team had an agent and the other didn't, just 1 agent out of 27 has a win rate further from 50% than luck alone explains — and checking 27 things, that's exactly what chance produces. Teams also share about 3 of their 5 agents on a typical map, and on 99 maps the two line-ups were identical.
 
