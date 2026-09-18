@@ -21,13 +21,18 @@ every model keeps the comparison honest.
 
 import numpy as np
 import pandas as pd
-from sklearn.base import clone
+from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import log_loss
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from dataset import season_folds
+
+# What the final model is given. Combat score is only there to stand in for
+# rating where rating was never recorded -- see RatingFallback.
+FINAL_COLUMNS = ["rating_diff", "acs_diff", "map_picked_by_a"]
 
 
 def make_model(estimator):
@@ -36,6 +41,50 @@ def make_model(estimator):
         SimpleImputer(strategy="constant", fill_value=0.0),
         StandardScaler(),
         estimator,
+    )
+
+
+class RatingFallback(BaseEstimator, TransformerMixin):
+    """Use combat score where a side's rating form is unknown.
+
+    Rating was not recorded for all of China Kickoff and much of China Stage 1,
+    so on 79 of the 756 learning maps a side's rating form is unknown, and the
+    model would read that as "no difference between the teams". Combat score is
+    nearly complete, so on those maps the combat-score difference is used
+    instead, converted to the rating scale.
+
+    The conversion is a single number worked out from the training rows of each
+    fold, so the maps being checked never influence it. Hands on two columns:
+    the repaired rating difference, and who picked the map.
+    """
+
+    def fit(self, X, y=None):
+        both = X[["rating_diff", "acs_diff"]].dropna()
+        # a line through zero: no gap in combat score should mean no gap in rating
+        self.scale_ = float(
+            (both["rating_diff"] * both["acs_diff"]).sum() / (both["acs_diff"] ** 2).sum()
+        )
+        return self
+
+    def transform(self, X):
+        rating = X["rating_diff"].copy()
+        gap = rating.isna()
+        rating.loc[gap] = X.loc[gap, "acs_diff"] * self.scale_
+        return pd.DataFrame({"rating_diff": rating, "map_picked_by_a": X["map_picked_by_a"]})
+
+
+def make_final_model():
+    """The committed model: repaired rating difference and who picked the map, into
+    logistic regression. Give it the three FINAL_COLUMNS.
+
+    Maps where nobody on a side had played before are still unknown after the
+    repair, and are filled with zero -- "no difference" -- as everywhere else.
+    """
+    return make_pipeline(
+        RatingFallback(),
+        SimpleImputer(strategy="constant", fill_value=0.0),
+        StandardScaler(),
+        LogisticRegression(max_iter=5000),
     )
 
 

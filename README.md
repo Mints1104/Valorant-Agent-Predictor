@@ -2,11 +2,11 @@
 
 A data science project. Analyzes VALORANT Champions Tour (VCT) esports data to study **agent composition synergy / meta trends** and build a **match win-prediction model**.
 
-> Status: in progress. Both research questions now have an answer. A model using only agent
-> picks scores 51.1% against a 55.5% baseline; adding how the ten players had been playing
-> takes it to 59.7%. No line-up wins more than its agents deserve once team strength is
-> accounted for. A Streamlit app demonstrates the model live. The test half has not been
-> touched.
+> Status: in progress. Both research questions now have an answer, and the model is frozen.
+> A model using only agent picks scores 51.1% against a 55.5% baseline; the final model,
+> built on how the ten players had been playing and who picked the map, scores 61.1%. No
+> line-up wins more than its agents deserve once team strength is accounted for. A
+> Streamlit app demonstrates the model live. The test half has not been touched.
 
 ## Problem
 
@@ -43,9 +43,10 @@ that didn't exist yet and maps that have since left the pool.
 5. **Second model, with player form** — done. [`notebooks/06_player_form_model.ipynb`](notebooks/06_player_form_model.ipynb), built by [`src/form.py`](src/form.py) and proved leak-free by [`test_form.py`](test_form.py). Scores 59.7%, which beats the baseline.
 6. **Composition synergy** — done. [`notebooks/07_composition_synergy.ipynb`](notebooks/07_composition_synergy.ipynb). No line-up over-performs once team strength is accounted for.
 7. **Model families** — done. [`notebooks/08_model_families.ipynb`](notebooks/08_model_families.ipynb). Logistic regression against random forest and gradient boosting, defaults and then tuned. Logistic regression on two columns is the final model.
-8. **Demo** — done. [`streamlit_app.py`](streamlit_app.py) predicts a map live and lets you watch the agent picks fail to matter.
-9. **Error analysis, explainability, and the test sets** — next.
-10. **Write-up** — what worked, what didn't, and the limitations.
+8. **Last feature experiments, then freeze** — done. [`notebooks/09_last_feature_experiments.ipynb`](notebooks/09_last_feature_experiments.ipynb). Combat score now stands in where rating was never recorded (kept); pulling thin records toward the average (dropped). Model frozen at 61.1%, built by `make_final_model()` in [`src/model.py`](src/model.py).
+9. **Demo** — done. [`streamlit_app.py`](streamlit_app.py) predicts a map live and lets you watch the agent picks fail to matter.
+10. **Error analysis, explainability, and the test sets** — next.
+11. **Write-up** — what worked, what didn't, and the limitations.
 
 ## What we've found so far
 
@@ -72,17 +73,17 @@ That last point set expectations, and it held: a model built on agent picks alon
 |---|---|
 | Baseline — guess whoever picked the map, team A on deciders | 55.5% |
 | Agent picks + map + who picked it | **51.1%** — loses to the baseline |
-| Players' form going in (rating difference) + who picked it | **59.7%** — beats it on 4 folds of 5 |
+| **Final model:** players' form going in (rating difference, combat score where rating is missing) + who picked it | **61.1%** — beats it on all 5 folds |
 
-Measured by accuracy as the headline, with log loss alongside to check the probabilities are honest. Saying "50/50" to every map scores 0.693 on log loss; the player-form model scores 0.678, and the agent-picks model scores **0.760 — worse than claiming to know nothing**, because it commits to answers it has no grounds for.
+Measured by accuracy as the headline, with log loss alongside to check the probabilities are honest. Saying "50/50" to every map scores 0.693 on log loss; the final model scores 0.676, and the agent-picks model scores **0.760 — worse than claiming to know nothing**, because it commits to answers it has no grounds for.
 
-- **The agent columns actively cost accuracy.** On their own they manage 48.0% and never clear 50.7% on any fold — they fit patterns that don't survive into the next part of the season. Added to the player-form model they drop it from 59.7% to 54.2%. Four separate measurements now agree.
+- **The agent columns actively cost accuracy.** On their own they manage 48.0% and never clear 50.7% on any fold — they fit patterns that don't survive into the next part of the season. Added to the final model they drop it from 61.1% to 54.7%, and push its log loss to 0.729. Four separate measurements now agree.
 - **A team's raw prior win rate predicts nothing** (~51%). Too noisy: 42% of matches involve a team with fewer than 10 earlier maps.
 - **Players' historical ratings do predict**, and recent form matters more than old form — accuracy rises steadily as older maps are faded out.
 - **No line-up wins more than its agents deserve.** Of 54 line-ups used ten or more times, two looked significant where chance alone gives 2.7, and none survived correcting for how many were tested. The apparent exceptions are teams rather than compositions: the best-looking line-up wins 65%, but Paper Rex plays 20 of its 43 maps and wins 75% with it while another team went 1–4 with the same five agents.
 - **That result comes with a limit worth stating.** Detecting a realistic five-point synergy effect would need around 784 maps of one exact line-up; the most-used line-up in the season has 86. So this is not evidence synergy doesn't exist — it's evidence a realistic effect is invisible in a single season, and that anything big enough to see here is more likely a strong roster than a strong composition.
 
-**Model families.** Random forest and gradient boosting were compared against logistic regression on the same folds, first on default settings and then tuned with twelve settings each — deliberately giving the trees more chances than logistic regression, so any bias from picking the best would favour them.
+**Model families.** Random forest and gradient boosting were compared against logistic regression on the same folds, first on default settings and then tuned with twelve settings each — deliberately giving the trees more chances than logistic regression, so any bias from picking the best would favour them. This comparison was run *before* the combat-score repair below, which is why logistic regression shows 59.7% here rather than the final model's 61.1%. The repair changes one input, not the choice of model.
 
 | | Without player stats (39) | With player stats (2) | Everything (41) |
 |---|---|---|---|
@@ -96,7 +97,30 @@ Measured by accuracy as the headline, with log loss alongside to check the proba
 - **Default random forest is confidently wrong.** It claims 95%+ certainty on 23% of maps and gets 66 of those wrong, giving it a log loss of 1.635 — more than twice the 0.693 for knowing nothing. Logistic regression never claims more than 78%. Requiring at least 30 maps per leaf brings random forest's log loss down to 0.673, but it stays less accurate.
 - **Trees beat logistic regression on the agent-heavy sets only because they are better at ignoring useless columns.** Refitting the best one without the agents costs it about one point, inside the margin of error; given the agents alone it scores 49.0%, below a coin flip. So the tree models — which *can* learn combinations of agents — find nothing in them either, confirming the synergy result by a second, independent method.
 
-The test half has not been touched.
+**Last feature experiments.** Two fixes, each aimed at a problem found by checking. The rules for keeping one were written down before either was run: better than the current model on at least 3 folds, worse on at most 1, and log loss no worse.
+
+| | Accuracy | Log loss | vs the model before | |
+|---|---|---|---|---|
+| Model before these experiments | 59.7% | 0.678 | — | |
+| **Combat score where rating is missing** | **61.1%** | **0.676** | 3 folds better, 0 worse | **kept** |
+| Pulling thin records toward the average | 59.1–59.8% | 0.682–0.688 | 2 better, 2 worse | dropped |
+| Both together | 59.1–59.8% | 0.676–0.677 | 3 better, 2 worse | dropped |
+
+- **The combat-score fix is a repair, not an accuracy gain.** Rating was never recorded for all of China Kickoff and much of China Stage 1, so on 79 of the 756 learning maps the model was told "no difference between the teams" when it actually knew nothing. On the 46 of those that the folds check, the old model got 22 right — exactly as many as simply guessing whoever picked the map. With the fix it gets 26. Overall that is 9 more maps right out of 629, which is inside the margin of error; what it genuinely changes is that one region is no longer invisible to the model for part of the season.
+- **The model's confidence tells you very little.** When it is 50–55% sure it is right about 60% of the time; when it is 70%+ sure, about 56%. What does line up with accuracy is how much history sits behind the prediction:
+
+  | Rated maps behind the less-known side | Right |
+  |---|---|
+  | Under 5 | 58.0% |
+  | 5–10 | 58.1% |
+  | 10–20 | 59.5% |
+  | 20+ | 64.5% |
+
+  Suggestive rather than proven: 20+ maps of history only exists later in the season, when the model also has more to learn from, and 124 maps is a small group.
+- **Pulling thin records toward the average was dropped.** It was the standard fix for exactly that problem, and it did make the model's confidence more meaningful — but it cost accuracy on folds 1 and 5 and failed the rules at every strength tried. Early in the season *everyone* has a thin record, so pulling them all toward average throws away the only evidence there is. Worth revisiting with more than one season of data, where early-season players would arrive with a year of history behind them.
+- **Adjusting ratings for the strength of the opponent** was considered and deliberately not tried. It is a new idea rather than a repair, and with a margin of error of ±4 to 6 points there would be no way to tell whether it helped.
+
+The model is now frozen. The test half has not been touched.
 
 ## The demo
 
@@ -151,7 +175,7 @@ Capstone-Project/
 │   ├── dataset.py                # builds the main table (one row per map played)
 │   ├── features.py               # turns line-ups into numbers a model can read
 │   ├── form.py                   # how the ten players had been playing, earlier matches only
-│   └── model.py                  # scores any model the same way, fold by fold
+│   └── model.py                  # the final model, and scoring any model the same way, fold by fold
 ├── notebooks/
 │   ├── 01_eda.ipynb              # exploring the raw files, and the problems in them
 │   ├── 02_build_map_table.ipynb  # building and checking the main table
@@ -160,7 +184,8 @@ Capstone-Project/
 │   ├── 05_player_form_probe.ipynb # rough check that player form predicts
 │   ├── 06_player_form_model.ipynb # the model with player form, the real version
 │   ├── 07_composition_synergy.ipynb # do line-ups over-perform their agents?
-│   └── 08_model_families.ipynb   # logistic regression vs tree models, and the final choice
+│   ├── 08_model_families.ipynb   # logistic regression vs tree models, and the final choice
+│   └── 09_last_feature_experiments.ipynb # combat score for missing ratings (kept), shrinkage (dropped)
 ├── Valorant_2025_All_Events_International_Regional/   # gitignored, local only
 └── Valorant_Champion_Tour_2021-2026_Data/              # gitignored, local only
 ```

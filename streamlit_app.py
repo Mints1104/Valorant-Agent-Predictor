@@ -22,11 +22,11 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 from dataset import build_map_table, split_season  # noqa: E402
 from features import agent_list, build_features, feature_columns  # noqa: E402
 from form import current_team_form, player_form  # noqa: E402
+from model import FINAL_COLUMNS, make_final_model  # noqa: E402
 
 HALF_LIFE = 5
-FORM_MODEL = ["rating_diff", "map_picked_by_a"]
 BASELINE_ACCURACY = 0.555
-FORM_ACCURACY = 0.597
+FORM_ACCURACY = 0.611
 AGENT_ACCURACY = 0.511
 
 st.set_page_config(
@@ -44,7 +44,9 @@ def load_season():
 
     columns = feature_columns(maps)
     x_agents, y = build_features(learn, columns)
-    form = player_form(learn, half_life=HALF_LIFE).fillna(0.0)
+    # Gaps are left in on purpose: the final model fills in missing ratings from
+    # combat score itself, and filling them with zero here would hide them from it.
+    form = player_form(learn, half_life=HALF_LIFE)
     teams = current_team_form(maps, half_life=HALF_LIFE)
 
     # each team's most-played line-up, so the agent pickers start somewhere real
@@ -65,18 +67,25 @@ def fit_models(_x_agents, _y, _form, columns):
     """Both models, plus the scaling each was fitted with."""
     combined = pd.concat([_x_agents, _form], axis=1)
 
-    fitted = {}
-    for name, cols in [("form", FORM_MODEL), ("agents", columns)]:
-        x = combined[cols]
-        middle, spread = x.mean(), x.std().replace(0, 1)
-        model = LogisticRegression(max_iter=5000).fit((x - middle) / spread, _y)
-        fitted[name] = {"model": model, "middle": middle, "spread": spread, "columns": cols}
+    fitted = {
+        "form": {
+            "pipeline": make_final_model().fit(combined[FINAL_COLUMNS].astype(float), _y),
+            "columns": FINAL_COLUMNS,
+        },
+    }
+
+    x = combined[columns]
+    middle, spread = x.mean(), x.std().replace(0, 1)
+    model = LogisticRegression(max_iter=5000).fit((x - middle) / spread, _y)
+    fitted["agents"] = {"model": model, "middle": middle, "spread": spread, "columns": columns}
     return fitted
 
 
 def predict(fitted, row: dict) -> float:
     """Chance team A wins, from a single row of feature values."""
-    frame = pd.DataFrame([row])[fitted["columns"]]
+    frame = pd.DataFrame([row])[fitted["columns"]].astype(float)
+    if "pipeline" in fitted:
+        return float(fitted["pipeline"].predict_proba(frame)[0, 1])
     scaled = (frame - fitted["middle"]) / fitted["spread"]
     return float(fitted["model"].predict_proba(scaled)[0, 1])
 
@@ -123,6 +132,7 @@ rating_b = float(teams.loc[team_b, "rating"])
 
 chance_a = predict(fitted["form"], {
     "rating_diff": rating_a - rating_b,
+    "acs_diff": float(teams.loc[team_a, "acs"]) - float(teams.loc[team_b, "acs"]),
     "map_picked_by_a": picked_value,
 })
 
@@ -217,7 +227,8 @@ with st.container(horizontal=True):
     st.metric("Guess at random", "50.0%", border=True)
 
 st.warning(
-    "**About four points better than a one-sentence rule.** These are the best 50-odd "
+    f"**About {(FORM_ACCURACY - BASELINE_ACCURACY) * 100:.0f} points better than a "
+    "one-sentence rule.** These are the best 50-odd "
     "teams in the world playing a game with real randomness in it, so matches are close "
     "to coin flips and no model built on pre-match information is going to change that. "
     "Treat this as a lean, not a prediction.",
@@ -231,7 +242,9 @@ Two numbers go in:
 
 1. **The difference between the two sides' player ratings**, worked out from every map
    those ten players had played earlier in the season, with recent maps counting for more
-   (a map {HALF_LIFE} maps ago counts half as much as the last one).
+   (a map {HALF_LIFE} maps ago counts half as much as the last one). Where a side's rating
+   was never recorded — much of the Chinese league early in the season — its combat score
+   is used instead, converted to the same scale.
 2. **Who chose the map** — team A, team B, or nobody.
 
 A logistic regression turns those into a probability. It was fitted on the
@@ -239,7 +252,7 @@ A logistic regression turns those into a probability. It was fitted on the
 that are held back and have never been used.
 
 **Why so few inputs?** Everything else tried made it worse. Adding the 27 agent columns
-drops it from {FORM_ACCURACY:.1%} to about 54%. With only {len(learn):,} maps to learn
+drops it from {FORM_ACCURACY:.1%} to about 55%. With only {len(learn):,} maps to learn
 from, any column that does not carry its own weight actively costs accuracy.
 
 **What it cannot see:** roster changes mid-season, who the opponent was when a rating was
@@ -255,8 +268,9 @@ shown here use the whole season, since a live prediction would be for a match pl
 *after* all of it. The model itself was trained only on the first half, and scored on
 folds inside that half.
 
-Ratings are missing for Chinese matches early in the season, so teams from that region
-carry less history than their map counts suggest.
+Ratings are missing for Chinese matches early in the season. The model uses combat score
+wherever a side's rating is unknown, but the ratings in this table still rest on fewer
+maps for teams from that region than their map counts suggest.
         """
     )
     st.dataframe(
