@@ -42,9 +42,10 @@ that didn't exist yet and maps that have since left the pool.
 4. **First model, without player stats** — done. Logistic regression on agent picks, map and who chose the map: [`notebooks/04_baseline_model.ipynb`](notebooks/04_baseline_model.ipynb). Scores 51.4% as fitted there, which loses to the baseline. (It appears as 51.1% in the results table below — same model, fitted with the columns put on a common scale so it can be compared fairly with the player-form model. Both figures are correct.)
 5. **Second model, with player form** — done. [`notebooks/06_player_form_model.ipynb`](notebooks/06_player_form_model.ipynb), built by [`src/form.py`](src/form.py) and proved leak-free by [`test_form.py`](test_form.py). Scores 59.7%, which beats the baseline.
 6. **Composition synergy** — done. [`notebooks/07_composition_synergy.ipynb`](notebooks/07_composition_synergy.ipynb). No line-up over-performs once team strength is accounted for.
-7. **Demo** — done. [`streamlit_app.py`](streamlit_app.py) predicts a map live and lets you watch the agent picks fail to matter.
-8. **Error analysis, explainability, and the test half** — next.
-9. **Write-up** — what worked, what didn't, and the limitations.
+7. **Model families** — done. [`notebooks/08_model_families.ipynb`](notebooks/08_model_families.ipynb). Logistic regression against random forest and gradient boosting, defaults and then tuned. Logistic regression on two columns is the final model.
+8. **Demo** — done. [`streamlit_app.py`](streamlit_app.py) predicts a map live and lets you watch the agent picks fail to matter.
+9. **Error analysis, explainability, and the test sets** — next.
+10. **Write-up** — what worked, what didn't, and the limitations.
 
 ## What we've found so far
 
@@ -80,6 +81,20 @@ Measured by accuracy as the headline, with log loss alongside to check the proba
 - **Players' historical ratings do predict**, and recent form matters more than old form — accuracy rises steadily as older maps are faded out.
 - **No line-up wins more than its agents deserve.** Of 54 line-ups used ten or more times, two looked significant where chance alone gives 2.7, and none survived correcting for how many were tested. The apparent exceptions are teams rather than compositions: the best-looking line-up wins 65%, but Paper Rex plays 20 of its 43 maps and wins 75% with it while another team went 1–4 with the same five agents.
 - **That result comes with a limit worth stating.** Detecting a realistic five-point synergy effect would need around 784 maps of one exact line-up; the most-used line-up in the season has 86. So this is not evidence synergy doesn't exist — it's evidence a realistic effect is invisible in a single season, and that anything big enough to see here is more likely a strong roster than a strong composition.
+
+**Model families.** Random forest and gradient boosting were compared against logistic regression on the same folds, first on default settings and then tuned with twelve settings each — deliberately giving the trees more chances than logistic regression, so any bias from picking the best would favour them.
+
+| | Without player stats (39) | With player stats (2) | Everything (41) |
+|---|---|---|---|
+| Logistic regression | 51.1% | **59.7%** | 53.9% |
+| Random forest, default | 52.4% | 52.8% | 53.6% |
+| Gradient boosting, default | 52.9% | 52.1% | 53.8% |
+| Best of 12 tuned random forests | 53.6% | 58.2% | 58.3% |
+| Best of 12 tuned gradient boosters | 56.5% | 57.6% | 57.5% |
+
+- **On the two columns that matter, none of the 24 tuned tree settings beats untuned logistic regression.** It is the final model.
+- **Default random forest is confidently wrong.** It claims 95%+ certainty on 23% of maps and gets 66 of those wrong, giving it a log loss of 1.635 — more than twice the 0.693 for knowing nothing. Logistic regression never claims more than 78%. Requiring at least 30 maps per leaf brings random forest's log loss down to 0.673, but it stays less accurate.
+- **Trees beat logistic regression on the agent-heavy sets only because they are better at ignoring useless columns.** Refitting the best one without the agents costs it about one point, inside the margin of error; given the agents alone it scores 49.0%, below a coin flip. So the tree models — which *can* learn combinations of agents — find nothing in them either, confirming the synergy result by a second, independent method.
 
 The test half has not been touched.
 
@@ -135,7 +150,8 @@ Capstone-Project/
 │   ├── dates.py                  # match dates, bridged from the second dataset
 │   ├── dataset.py                # builds the main table (one row per map played)
 │   ├── features.py               # turns line-ups into numbers a model can read
-│   └── form.py                   # how the ten players had been playing, earlier matches only
+│   ├── form.py                   # how the ten players had been playing, earlier matches only
+│   └── model.py                  # scores any model the same way, fold by fold
 ├── notebooks/
 │   ├── 01_eda.ipynb              # exploring the raw files, and the problems in them
 │   ├── 02_build_map_table.ipynb  # building and checking the main table
@@ -143,7 +159,8 @@ Capstone-Project/
 │   ├── 04_baseline_model.ipynb   # the model without player stats, and why it loses
 │   ├── 05_player_form_probe.ipynb # rough check that player form predicts
 │   ├── 06_player_form_model.ipynb # the model with player form, the real version
-│   └── 07_composition_synergy.ipynb # do line-ups over-perform their agents?
+│   ├── 07_composition_synergy.ipynb # do line-ups over-perform their agents?
+│   └── 08_model_families.ipynb   # logistic regression vs tree models, and the final choice
 ├── Valorant_2025_All_Events_International_Regional/   # gitignored, local only
 └── Valorant_Champion_Tour_2021-2026_Data/              # gitignored, local only
 ```
