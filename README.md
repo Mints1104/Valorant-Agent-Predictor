@@ -45,7 +45,7 @@ that didn't exist yet and maps that have since left the pool.
 7. **Model families** — done. [`notebooks/08_model_families.ipynb`](notebooks/08_model_families.ipynb). Logistic regression against random forest and gradient boosting, defaults and then tuned. Logistic regression on two columns is the final model.
 8. **Last feature experiments, then freeze** — done. [`notebooks/09_last_feature_experiments.ipynb`](notebooks/09_last_feature_experiments.ipynb). Combat score now stands in where rating was never recorded (kept); pulling thin records toward the average (dropped). Model frozen at 61.1%, built by `make_final_model()` in [`src/model.py`](src/model.py).
 9. **Demo** — done. [`streamlit_app.py`](streamlit_app.py) predicts a map live and lets you watch the agent picks fail to matter.
-10. **Error analysis** — done. [`notebooks/10_error_analysis.ipynb`](notebooks/10_error_analysis.ipynb). Where the model is strong, where it is guessing, and which weaknesses are fixable.
+10. **Error analysis** — done. [`notebooks/10_error_analysis.ipynb`](notebooks/10_error_analysis.ipynb). The errors have no findable structure — the model is close to a uniform 61% model. The one real pattern is that it squashes every team toward 50%.
 11. **Explainability, and the test sets** — next.
 12. **Write-up** — what worked, what didn't, and the limitations.
 
