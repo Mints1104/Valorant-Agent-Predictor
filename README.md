@@ -45,8 +45,9 @@ that didn't exist yet and maps that have since left the pool.
 7. **Model families** — done. [`notebooks/08_model_families.ipynb`](notebooks/08_model_families.ipynb). Logistic regression against random forest and gradient boosting, defaults and then tuned. Logistic regression on two columns is the final model.
 8. **Last feature experiments, then freeze** — done. [`notebooks/09_last_feature_experiments.ipynb`](notebooks/09_last_feature_experiments.ipynb). Combat score now stands in where rating was never recorded (kept); pulling thin records toward the average (dropped). Model frozen at 61.1%, built by `make_final_model()` in [`src/model.py`](src/model.py).
 9. **Demo** — done. [`streamlit_app.py`](streamlit_app.py) predicts a map live and lets you watch the agent picks fail to matter.
-10. **Error analysis, explainability, and the test sets** — next.
-11. **Write-up** — what worked, what didn't, and the limitations.
+10. **Error analysis** — done. [`notebooks/10_error_analysis.ipynb`](notebooks/10_error_analysis.ipynb). Where the model is strong, where it is guessing, and which weaknesses are fixable.
+11. **Explainability, and the test sets** — next.
+12. **Write-up** — what worked, what didn't, and the limitations.
 
 ## What we've found so far
 
@@ -107,20 +108,28 @@ Measured by accuracy as the headline, with log loss alongside to check the proba
 | Both together | 59.1–59.8% | 0.676–0.677 | 3 better, 2 worse | dropped |
 
 - **The combat-score fix is a repair, not an accuracy gain.** Rating was never recorded for all of China Kickoff and much of China Stage 1, so on 79 of the 756 learning maps the model was told "no difference between the teams" when it actually knew nothing. On the 46 of those that the folds check, the old model got 22 right — exactly as many as simply guessing whoever picked the map. With the fix it gets 26. Overall that is 9 more maps right out of 629, which is inside the margin of error; what it genuinely changes is that one region is no longer invisible to the model for part of the season.
-- **The model's confidence tells you very little.** When it is 50–55% sure it is right about 60% of the time; when it is 70%+ sure, about 56%. What does line up with accuracy is how much history sits behind the prediction:
-
-  | Rated maps behind the less-known side | Right |
-  |---|---|
-  | Under 5 | 58.0% |
-  | 5–10 | 58.1% |
-  | 10–20 | 59.5% |
-  | 20+ | 64.5% |
-
-  Suggestive rather than proven: 20+ maps of history only exists later in the season, when the model also has more to learn from, and 124 maps is a small group.
+- **The model's confidence tells you very little.** When it is 50–55% sure it is right about 60% of the time; when it is 70%+ sure, about 56%. What lined up with accuracy instead was how much history sat behind the prediction — measured **on the model as it stood before the combat-score repair**: 58.0% under 5 rated maps, 58.1% at 5–10, 59.5% at 10–20, 64.5% at 20+. After the repair that climb largely flattens, because the thin-history maps were mostly the Chinese ones it fixed. See the error analysis below for the current figures.
 - **Pulling thin records toward the average was dropped.** It was the standard fix for exactly that problem, and it did make the model's confidence more meaningful — but it cost accuracy on folds 1 and 5 and failed the rules at every strength tried. Early in the season *everyone* has a thin record, so pulling them all toward average throws away the only evidence there is. Worth revisiting with more than one season of data, where early-season players would arrive with a year of history behind them.
 - **Adjusting ratings for the strength of the opponent** was considered and deliberately not tried. It is a new idea rather than a repair, and with a margin of error of ±4 to 6 points there would be no way to tell whether it helped.
 
 The model is now frozen. The test half has not been touched.
+
+**Where the model gets it wrong** ([`notebooks/10_error_analysis.ipynb`](notebooks/10_error_analysis.ipynb)). Slicing 629 validation maps makes small groups, so each figure below carries the range chance alone could produce.
+
+| | Maps | Right | ± |
+|---|---|---|---|
+| Teams from **different leagues** | 95 | 69.5% | 10.1 |
+| **Decider** maps, which nobody chose | 103 | 68.9% | 9.7 |
+| Both sides with **20+ rated maps** of history | 124 | 66.1% | 8.8 |
+| **Everything** | 629 | 61.2% | 3.9 |
+| Teams from the **same league** | 534 | 59.7% | 4.2 |
+| **Pacific Kickoff**, the first event of the year | 46 | 50.0% | 14.4 |
+
+- **It predicts mismatches well and toss-ups badly.** The four leagues only meet at Masters and Champions, and there the model gets 69.5% right against 59.7% within a league. That is not just because those matches come later, when it knows more: holding history roughly equal (both sides with 10+ rated maps) the gap widens to **72.8% against 59.5%**. Leagues differ in strength, so those matchups contain real gaps a rating difference can see. Within a league, teams are closely matched and most maps genuinely are near coin flips.
+- **It does best on decider maps** — 68.9%, with no more history behind them than picked maps. A team picks the map it is best at, which partly cancels a difference in strength; the decider is neutral ground, where the stronger side shows.
+- **Its mistakes are not just close games.** Maps it gets wrong are decided by the same median margin as maps it gets right (5 rounds), with much the same share of close games and one-sided ones. "It only loses the toss-ups" would be a flattering story and it isn't true.
+- **It is not misjudging particular teams.** The teams it reads worst are ones whose maps it can't call, not ones it rates wrongly — it expected TALON to win 49% of their maps and they won 45%. That's variance, and no feature fixes it.
+- **It does under-rate the best teams.** It expected DRX to win 51% of their maps when they won 62%, and Paper Rex 55% against 64%. Its probabilities are compressed — it rarely commits past about 70%, even for teams winning two maps in three.
 
 ## The demo
 
@@ -185,7 +194,8 @@ Capstone-Project/
 │   ├── 06_player_form_model.ipynb # the model with player form, the real version
 │   ├── 07_composition_synergy.ipynb # do line-ups over-perform their agents?
 │   ├── 08_model_families.ipynb   # logistic regression vs tree models, and the final choice
-│   └── 09_last_feature_experiments.ipynb # combat score for missing ratings (kept), shrinkage (dropped)
+│   ├── 09_last_feature_experiments.ipynb # combat score for missing ratings (kept), shrinkage (dropped)
+│   └── 10_error_analysis.ipynb   # where the model is strong, and where it is guessing
 ├── Valorant_2025_All_Events_International_Regional/   # gitignored, local only
 └── Valorant_Champion_Tour_2021-2026_Data/              # gitignored, local only
 ```
