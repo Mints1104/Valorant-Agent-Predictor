@@ -1,19 +1,32 @@
-# Valorant Composition & Win Prediction
+# VALORANT Agent Recommendations & Win Prediction
 
-A data science project. Analyzes VALORANT Champions Tour (VCT) esports data to study **agent composition synergy / meta trends** and build a **match win-prediction model**.
+A data science project. Uses VALORANT Champions Tour (VCT) esports data to
+**recommend agents the way professional teams pick them**, and asks whether agent picks,
+line-ups or players' form can **predict who wins**.
 
-> Status: in progress. Both research questions now have an answer, and the model is frozen.
-> A model using only agent picks scores 51.1% against a 55.5% baseline; the final model,
-> built on how the ten players had been playing and who picked the map, scores 61.1%. No
-> line-up wins more than its agents deserve once team strength is accounted for. A
-> Streamlit app demonstrates the model live. The test half has not been touched.
+> Status: in progress. **The headline is a pro-pick recommender.** Given a map and four
+> agents already locked in, it has the pros' actual fifth pick among its three suggestions
+> **91.3%** of the time on line-ups it had never seen, against 77.3% for a naive "most-played
+> lately" rule. That test was committed before it was run.
+>
+> Behind it, the win-prediction work: agent picks do not predict the winner, measured four
+> ways and confirmed on unseen maps. Players' recent form gave a clear edge in development
+> (61.1%), but on the held-back test half the final model scored **54.5% against a 52.9%
+> baseline** — ahead, but within the margin of error. No line-up wins more than its agents
+> deserve once team strength is accounted for. The 2026 season is untouched.
 
 ## Problem
 
 Team comps in VALORANT esports shift with the patch meta, but it's not obvious which agent combinations actually correlate with winning at the pro level, or how much a draft (pick/ban) phase predicts a match outcome before a round is even played. This project looks at:
 
-1. **Composition synergy / meta-analysis** — which agent combinations, per map, are over/under-performing relative to their pick rate.
-2. **Win prediction** — given the draft (map picks/bans, agent comps), how well can a model predict the match winner?
+1. **Agent recommendations** — the headline. Given a map, and any agents already locked in, what would a professional team pick? A recommender is judged on how often it matches what the pros actually chose, on line-ups it has never seen.
+2. **Composition synergy / meta-analysis** — which agent combinations, per map, are over/under-performing relative to their pick rate.
+3. **Win prediction** — given the draft (map picks/bans, agent comps), how well can a model predict the match winner?
+
+The headline moved from win prediction to recommendations on 2026-09-21, on the
+instructor's advice that a pre-match win model well short of 80% should not be the main
+outcome. The win-prediction work stays as the supporting evidence for why the recommender
+describes what the pros *do* rather than claiming its picks win.
 
 ## Data
 
@@ -23,16 +36,19 @@ Two Kaggle datasets, not committed to this repo (see [`data/README.md`](data/REA
 |---|---|---|
 | VCT 2021-2026 Data | 2021–2026, all regions | Primary source — match results, agent picks, and the map pick/ban phase |
 | VCT 2025 All Events (Int'l + Regional) | 2025 only | Supplies the match **dates**, which the primary source has none of. The two share the same match reference numbers |
+| VCT 2024 (same author as the 2025 source) | 2024 only | Supplies the 2024 match dates the same way — every 2024 match, 100%. Read from a local `vct_2024/` folder; see [`data/README.md`](data/README.md) |
 
 Field-level definitions: [`columns_description.csv`](columns_description.csv).
 
 ## Scope
 
-**2025 season only.** The earlier years have no date information anywhere, so their matches
-can't be put in the order they were played — and that ordering is what stops the model
-being tested unfairly (see "How the model is tested" below). Expanding to earlier seasons
-is a possible later step once a working model exists; it would also mean handling agents
-that didn't exist yet and maps that have since left the pool.
+**The win model uses the 2025 season only.** When it was built, earlier years had no date
+information, so their matches couldn't be put in the order they were played — and that
+ordering is what stops a model being tested unfairly (see "How the model is tested" below).
+
+**The recommender uses 2024 and 2025.** A dated 2024 season turned up later: 1,104 maps from
+434 matches, every one dated. 2021–2023 are still undated. **2026 is sealed** as a second
+test set for the win model and has not been looked at.
 
 ## Approach and progress
 
@@ -47,8 +63,46 @@ that didn't exist yet and maps that have since left the pool.
 9. **Demo** — done. [`streamlit_app.py`](streamlit_app.py) predicts a map live and lets you watch the agent picks fail to matter.
 10. **Error analysis** — done. [`notebooks/10_error_analysis.ipynb`](notebooks/10_error_analysis.ipynb). The errors have no findable structure — the model is close to a uniform 61% model. The one real pattern is that it squashes every team toward 50%.
 11. **Explainability** — done. [`notebooks/11_explainability.ipynb`](notebooks/11_explainability.ipynb). Feature importance, a partial-dependence plot, and SHAP values checked against the `shap` library. Recent form counts about twice as much as who chose the map.
-12. **The test sets** — next. The 2025 test half first, then 2026.
-13. **Write-up** — what worked, what didn't, and the limitations.
+12. **Win model, scored once on the test half** — done. [`notebooks/12_test_half.ipynb`](notebooks/12_test_half.ipynb), committed before it was run. 54.5% against the picker rule's 52.9%: ahead, but not distinguishable from it on 516 maps.
+13. **Recommender, development** — done. [`notebooks/13_recommender_development.ipynb`](notebooks/13_recommender_development.ipynb), built by [`src/recommend.py`](src/recommend.py). Five methods compared; gradient boosting chosen as the headline by a rule written before the results.
+14. **Recommender, tested once** — done. [`notebooks/14_recommender_test.ipynb`](notebooks/14_recommender_test.ipynb), committed before it was run. 91.3% top-3 against the naive rule's 77.3%.
+15. **Recommender in the app** — next. Each recommendation shown with the past pro games behind it.
+16. **A second win model using 2024 (v2), and scoring both on 2026** — after the app.
+17. **Write-up** — what worked, what didn't, and the limitations.
+
+## The headline: recommending agents the way the pros pick them
+
+Give the recommender a map and four agents already locked in; it ranks every other agent by
+how likely a professional team would be to pick it there. It is measured on the 2025 test
+half — **1,032 line-ups it had never been scored on**, 5,160 questions — using only line-ups
+played before each week, the way it would be used for real. The plan was committed before it
+ran ([`notebooks/14_recommender_test.ipynb`](notebooks/14_recommender_test.ipynb)).
+
+| With four agents locked in | Pro's pick named first | Pro's pick in the top 3 |
+|---|---|---|
+| **Gradient boosting — the headline** | **74.8%** (73.0–76.7) | **91.3%** (90.0–92.6) |
+| Classifier with map × agent columns | 75.1% | 91.4% |
+| Co-occurrence | 76.4% | 91.2% |
+| Classifier, plain | 71.2% | 89.1% |
+| Naive rule — the most-played agents on this map lately | 56.0% | 77.3% |
+| Picking at random from the ~23 left | ~4% | ~13% |
+
+*95% ranges from resampling whole matches.*
+
+- **It beats the naive rule by 14.0 points of top-3** (range 12.6 to 15.5), by the rule set in
+  advance.
+- **The three best methods tie.** Gradient boosting is the headline because a rule written
+  before the development results said so — best top-3 — and it was kept to.
+- **The test scored above development (91.3% against 88.0%), but the naive rule rose by
+  more** (71.1% to 77.3%). The test half was easier to predict — more history, no new
+  agents — rather than the recommender getting lucky. The lead shrank slightly, from about
+  17 points to 14.
+- **Its value is in completing a line-up.** Given only the map, nothing beats the naive rule:
+  every method recovers about 3.3–3.4 of the pros' five agents.
+- **A brand-new map costs about 13 points** — 80.1% top-3 on Corrode, which arrived with no
+  history, against 93.0% elsewhere.
+- **It measures imitation, not winning.** It knows what the pros play; the win-prediction
+  work below found that agent picks do not predict who wins.
 
 ## What we've found so far
 
@@ -69,7 +123,24 @@ that didn't exist yet and maps that have since left the pool.
 
 That last point set expectations, and it held: a model built on agent picks alone lands near a coin flip.
 
-**Model results so far**, all measured on time-ordered validation folds cut between matches, never inside one:
+**Win model on the held-back test half — the figure that counts.** Scored once, on 516 maps
+no model had been scored on, with the plan committed before it ran
+([`notebooks/12_test_half.ipynb`](notebooks/12_test_half.ipynb)):
+
+| On the 516 test maps | Accuracy | Log loss |
+|---|---|---|
+| **Final model** | **54.5%** | 0.689 |
+| Picker rule | 52.9% | — |
+| Always team A | 52.3% | — |
+| Agent-picks model | 50.8% | 0.704 |
+
+It leads the picker rule by 1.6 points, with a 95% range of −3.2 to +6.4: **ahead, but not
+distinguishable from the baseline on this many maps.** The agent-picks model came last again,
+with a log loss worse than saying 50/50 — the main negative finding, confirmed on unseen maps.
+The validation figures below were optimistic: the picker rule itself fell from 55.5% to 52.9%
+on the test half, and the model's lead over it shrank from 5.6 points to 1.6.
+
+**Development results**, measured on time-ordered validation folds cut between matches, never inside one:
 
 | | Score |
 |---|---|
@@ -113,7 +184,7 @@ Measured by accuracy as the headline, with log loss alongside to check the proba
 - **Pulling thin records toward the average was dropped.** It was the standard fix for exactly that problem, and it did make the model's confidence more meaningful — but it cost accuracy on folds 1 and 5 and failed the rules at every strength tried. Early in the season *everyone* has a thin record, so pulling them all toward average throws away the only evidence there is. Worth revisiting with more than one season of data, where early-season players would arrive with a year of history behind them.
 - **Adjusting ratings for the strength of the opponent** was considered and deliberately not tried. It is a new idea rather than a repair, and with a margin of error of ±4 to 6 points there would be no way to tell whether it helped.
 
-The model is now frozen. The test half has not been touched.
+The model is now frozen. It was then scored once on the test half — see the start of this section.
 
 **Where the model gets it wrong** ([`notebooks/10_error_analysis.ipynb`](notebooks/10_error_analysis.ipynb)). **The short answer is that it has no pattern worth acting on.** The model is close to a uniform 61% model rather than a strong one in some situations and a weak one in others.
 
@@ -214,7 +285,8 @@ Capstone-Project/
 │   ├── dataset.py                # builds the main table (one row per map played)
 │   ├── features.py               # turns line-ups into numbers a model can read
 │   ├── form.py                   # how the ten players had been playing, earlier matches only
-│   └── model.py                  # the final model, and scoring any model the same way, fold by fold
+│   ├── model.py                  # the final model, and scoring any model the same way, fold by fold
+│   └── recommend.py              # the pro-pick recommender, and its walk-forward scoring
 ├── notebooks/
 │   ├── 01_eda.ipynb              # exploring the raw files, and the problems in them
 │   ├── 02_build_map_table.ipynb  # building and checking the main table
@@ -225,7 +297,12 @@ Capstone-Project/
 │   ├── 07_composition_synergy.ipynb # do line-ups over-perform their agents?
 │   ├── 08_model_families.ipynb   # logistic regression vs tree models, and the final choice
 │   ├── 09_last_feature_experiments.ipynb # combat score for missing ratings (kept), shrinkage (dropped)
-│   └── 10_error_analysis.ipynb   # where the model is strong, and where it is guessing
+│   ├── 10_error_analysis.ipynb   # where the model is strong, and where it is guessing
+│   ├── 11_explainability.ipynb   # what the win model keys on: importance, partial dependence, SHAP
+│   ├── 12_test_half.ipynb        # the win model, scored once on the test half
+│   ├── 13_recommender_development.ipynb # five recommender methods, and the headline choice
+│   └── 14_recommender_test.ipynb # the recommender, tested once
+├── vct_2024/                     # gitignored, local only -- 2024 match dates
 ├── Valorant_2025_All_Events_International_Regional/   # gitignored, local only
 └── Valorant_Champion_Tour_2021-2026_Data/              # gitignored, local only
 ```
