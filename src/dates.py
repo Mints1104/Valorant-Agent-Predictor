@@ -1,4 +1,4 @@
-"""Match dates for the VCT 2025 season.
+"""Match dates for a VCT season.
 
 The VCT 2021-2026 dataset (our primary source) has no date column in any of its
 21 tables, so matches can't be ordered in time -- which a chronological
@@ -7,16 +7,26 @@ and both are scraped from vlr.gg, so they share a match ID space:
 `match_id` there == `Match ID` in the primary dataset's ids table.
 
 This builds that bridge. Verified against vct_2025: all 503 primary-dataset
-matches get a date, every tournament at 100%.
+matches get a date, every tournament at 100%. Verified against vct_2024: all 434
+get a date, every tournament at 100%.
+
+Both date sources come from the same author and share one layout -- a folder per
+event, each with a matches.csv holding the date and the local start time.
 """
 
 import glob
 import os
+from pathlib import Path
 
 import kagglehub
 import pandas as pd
 
 DATASET = "piyush86kumar/valorant-vct-2025-all-events"
+
+# Where each season's dates come from. 2025 downloads through kagglehub like the
+# rest of the project. 2024 is read from a folder at the repo root (gitignored,
+# as all raw data is) -- see data/README.md for where to get it.
+_LOCAL_2024 = Path(__file__).resolve().parent.parent / "vct_2024"
 
 # vlr.gg renders a "Today"/"Yesterday" badge next to recent matches; the scrape
 # concatenated it onto the date string for 8 rows (e.g. "Sun, October 5, 2025Today").
@@ -26,13 +36,26 @@ _DATE_FMT = "%a, %B %d, %Y"
 _DATETIME_FMT = "%a, %B %d, %Y %I:%M %p"
 
 
-def load_match_dates() -> pd.DataFrame:
+def _date_source(season: str) -> str:
+    """The folder holding one sub-folder per event for this season."""
+    if season == "vct_2025":
+        return kagglehub.dataset_download(DATASET)
+    if season == "vct_2024":
+        if not _LOCAL_2024.is_dir():
+            msg = f"2024 dates expected in {_LOCAL_2024} -- see data/README.md"
+            raise FileNotFoundError(msg)
+        return str(_LOCAL_2024)
+    msg = f"No date source for {season}. 2026 has none: it is ordered by the VCT calendar instead."
+    raise ValueError(msg)
+
+
+def load_match_dates(season: str = "vct_2025") -> pd.DataFrame:
     """Return one row per match: match_id, match_date, match_datetime, event.
 
     Sort by (match_datetime, match_id) for a stable chronological order --
     concurrent matches share a timestamp, so match_id breaks those ties.
     """
-    root = kagglehub.dataset_download(DATASET)
+    root = _date_source(season)
     files = sorted(glob.glob(os.path.join(root, "*", "matches.csv")))
     if not files:
         msg = f"No matches.csv found under {root}"

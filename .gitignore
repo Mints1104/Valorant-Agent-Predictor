@@ -1,6 +1,7 @@
 # Raw Kaggle datasets — fetched via kagglehub, not versioned (see data/README.md)
 /Valorant_2025_All_Events_International_Regional/
 /Valorant_Champion_Tour_2021-2026_Data/
+/vct_2024/
 
 # Python
 __pycache__/

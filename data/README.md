@@ -101,6 +101,18 @@ Two gotchas it handles, both worth knowing about:
 `match_id` correlates with time (Spearman 0.979) but is **not** monotonic — it
 decreases against the clock in 182 places — so order by the date, not the ID.
 
+### 2024 dates
+
+`load_match_dates("vct_2024")` reads dates for the 2024 season from a folder called
+`vct_2024/` at the repo root. It is gitignored like all raw data. It comes from the same
+author as the 2025 date source and has the same layout: one folder per event, each with a
+`matches.csv`. It dates all 434 of the main dataset's 2024 matches, every event at 100%.
+
+Unlike the rest of the data, it is not downloaded through `kagglehub`. Put the folder in
+place by hand. `load_match_dates` raises a clear error, naming the folder, if it is missing.
+
+The same ID trap applies: in 2024, `match_id` runs against the clock in 160 places.
+
 ## Column reference
 
 See [`columns_description.csv`](../columns_description.csv) (tracked in the repo) for the field-by-field dictionary — it's small and mostly still applies to Dataset 2's equivalent tables, though some column names differ slightly (check headers when in doubt).

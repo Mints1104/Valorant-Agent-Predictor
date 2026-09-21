@@ -56,7 +56,11 @@ def load_player_maps(maps: pd.DataFrame) -> pd.DataFrame:
     counted several times over. Raises if the row count is not ten per map,
     since that means a join has quietly lost somebody.
     """
-    overview = load_primary("matches/overview.csv")
+    # Tournament names carry the year ("VCT 2025: ...", "Champions Tour 2024: ..."),
+    # so rows from different seasons can never be matched to the wrong map.
+    seasons = sorted({f"vct_{year}" for year in maps["played_at"].dt.year})
+    overview = pd.concat([load_primary("matches/overview.csv", s) for s in seasons],
+                         ignore_index=True)
 
     per_map = overview["Map"].str.strip().str.lower() != "all maps"
     whole_map = overview["Side"] == "both"

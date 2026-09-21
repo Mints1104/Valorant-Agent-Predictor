@@ -61,9 +61,9 @@ OUTPUT_COLUMNS = {
 }
 
 
-def load_primary(path: str) -> pd.DataFrame:
+def load_primary(path: str, season: str = SEASON) -> pd.DataFrame:
     """Load one CSV from the main dataset. Downloads once, then reads from cache."""
-    return kagglehub.dataset_load(KaggleDatasetAdapter.PANDAS, PRIMARY, f"{SEASON}/{path}")
+    return kagglehub.dataset_load(KaggleDatasetAdapter.PANDAS, PRIMARY, f"{season}/{path}")
 
 
 def _team_compositions(overview: pd.DataFrame) -> pd.DataFrame:
@@ -82,17 +82,18 @@ def _team_compositions(overview: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def build_map_table() -> pd.DataFrame:
-    """One row per map played in VCT 2025, ready for feature building.
+def build_map_table(season: str = SEASON) -> pd.DataFrame:
+    """One row per map played in one VCT season, ready for feature building.
 
-    Raises if any step loses or duplicates rows, since a silent change in row
-    count almost always means a name mismatch rather than a real gap.
+    Defaults to 2025, the season the frozen model was built on. Raises if any
+    step loses or duplicates rows, since a silent change in row count almost
+    always means a name mismatch rather than a real gap.
     """
-    maps_scores = load_primary("matches/maps_scores.csv")
-    scores = load_primary("matches/scores.csv")
-    ids = load_primary("ids/tournaments_stages_matches_games_ids.csv")
-    overview = load_primary("matches/overview.csv")
-    draft = load_primary("matches/draft_phase.csv")
+    maps_scores = load_primary("matches/maps_scores.csv", season)
+    scores = load_primary("matches/scores.csv", season)
+    ids = load_primary("ids/tournaments_stages_matches_games_ids.csv", season)
+    overview = load_primary("matches/overview.csv", season)
+    draft = load_primary("matches/draft_phase.csv", season)
 
     # Exhibition matches are labelled as such and have made-up line-ups.
     exhibitions = set(
@@ -110,7 +111,7 @@ def build_map_table() -> pd.DataFrame:
     table = table.merge(ids[MATCH_KEY + ["Map", "Match ID", "Game ID"]],
                         on=MATCH_KEY + ["Map"], how="left")
 
-    dates = load_match_dates()
+    dates = load_match_dates(season)
     table = table.merge(dates[["match_id", "match_datetime", "event"]],
                         left_on="Match ID", right_on="match_id", how="left")
 
