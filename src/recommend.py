@@ -226,3 +226,29 @@ def summarise(results: pd.DataFrame) -> dict:
         "top-3": float((ranks <= 3).mean()),
         "from scratch, of 5": float(results["from_scratch_overlap"].mean()),
     }
+
+
+def lineup_records(maps: pd.DataFrame) -> pd.DataFrame:
+    """One row per team per map, with the opponent and the result -- for showing evidence.
+
+    Kept separate from `lineup_table`, which the recommender learns from and which never
+    needs to know who won. Results are only ever shown to a person, never used to rank.
+    """
+    columns = ["played_at", "match_id", "event", "map"]
+    a_side = maps[columns].assign(
+        team=maps["team_a"], opponent=maps["team_b"], agents=maps["comp_a"].map(tuple),
+        rounds_for=maps["score_a"], rounds_against=maps["score_b"], won=maps["team_a_won"] == 1,
+    )
+    b_side = maps[columns].assign(
+        team=maps["team_b"], opponent=maps["team_a"], agents=maps["comp_b"].map(tuple),
+        rounds_for=maps["score_b"], rounds_against=maps["score_a"], won=maps["team_a_won"] == 0,
+    )
+    out = pd.concat([a_side, b_side], ignore_index=True)
+    return out.sort_values(["played_at", "match_id"], ascending=False).reset_index(drop=True)
+
+
+def games_with(records: pd.DataFrame, map_name: str, agents) -> pd.DataFrame:
+    """Every line-up on this map that included all of `agents`, newest first."""
+    wanted = set(agents)
+    on_map = records[records["map"] == map_name]
+    return on_map[on_map["agents"].map(lambda lineup: wanted <= set(lineup))]

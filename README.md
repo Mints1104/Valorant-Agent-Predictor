@@ -222,10 +222,25 @@ This section is a correction of an earlier version of itself, which reported tha
 .venv/Scripts/python.exe -m streamlit run streamlit_app.py
 ```
 
-Pick two teams, a map, and who chose it, and it predicts the winner from the two features
-the model settled on.
+Two pages, the recommender first.
 
-It loads **both** models side by side deliberately. Changing the agent line-ups swings the
+**Agent recommender.** Pick a map and lock in up to four agents; it suggests the next pick
+the way the pros make it. For any suggestion it shows the past pro games behind it: *"of the
+110 pro line-ups on Icebox in the last 180 days with these four, 31 also ran Sage"*, then
+how many pro maps that line-up has been played on, its record, which teams played it most,
+and the most recent of those games. A caveat sits beside every record: results reflect the
+teams as much as the agents, and agent picks do not predict who wins.
+
+With **nothing** locked in, it shows no recommendations — just the most-played agents on that
+map lately, with their counts. Both notebooks found that from the map alone nothing beats
+that list, and gradient boosting could misorder the obvious picks there (putting Omen fourth
+on Lotus, where pros played it in every recent line-up). So that view uses no model, and its
+ranking and its evidence are the same numbers.
+
+**Win predictor.** Pick two teams, a map, and who chose it, and it predicts the winner from
+the two features the win model settled on.
+
+It loads **both** win models side by side deliberately. Changing the agent line-ups swings the
 agent-picks model by twenty points or more while the player-form model does not move at
 all, because it never sees the agents. Changing a team does the reverse. That turns the
 project's main finding into something you can watch happen rather than something you have
@@ -275,7 +290,10 @@ Capstone-Project/
 ├── requirements.txt              # project dependencies
 ├── test_data_pull.py             # smoke test: confirms kagglehub can fetch both datasets
 ├── test_form.py                  # proves the player-form feature only looks backwards
-├── streamlit_app.py              # the demo: live prediction, and the agent finding made visible
+├── streamlit_app.py              # the demo: navigation over the two pages below
+├── app_pages/
+│   ├── recommender.py            # the headline: pick a map, lock in agents, see the evidence
+│   └── win_predictor.py          # live win prediction, and the agent finding made visible
 ├── .streamlit/config.toml        # theme for the demo
 ├── data/
 │   ├── README.md                 # how to fetch the raw data, and how dates are handled
