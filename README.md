@@ -47,8 +47,10 @@ information, so their matches couldn't be put in the order they were played — 
 ordering is what stops a model being tested unfairly (see "How the model is tested" below).
 
 **The recommender uses 2024 and 2025.** A dated 2024 season turned up later: 1,104 maps from
-434 matches, every one dated. 2021–2023 are still undated. **2026 is sealed** as a second
-test set for the win model and has not been looked at.
+434 matches, every one dated. 2021–2023 are still undated. **2026 is sealed** as the final
+test set and has not been looked at. No dataset dates it, so its dates were read from vlr.gg
+by [`fetch_vlr_dates.py`](fetch_vlr_dates.py), after that script matched the trusted 2025
+dates on all 504 matches.
 
 ## Approach and progress
 
@@ -292,6 +294,7 @@ Capstone-Project/
 ├── test_data_pull.py             # smoke test: confirms kagglehub can fetch both datasets
 ├── test_form.py                  # proves the player-form feature only looks backwards
 ├── check_test_inputs.py          # reproduces notebook 12's input-only check: no bug in the test inputs
+├── fetch_vlr_dates.py            # reads match dates from vlr.gg for 2026, which no dataset dates
 ├── streamlit_app.py              # the demo: navigation over the two pages below
 ├── app_pages/
 │   ├── recommender.py            # the headline: pick a map, lock in agents, see the evidence

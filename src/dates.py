@@ -28,6 +28,12 @@ DATASET = "piyush86kumar/valorant-vct-2025-all-events"
 # as all raw data is) -- see data/README.md for where to get it.
 _LOCAL_2024 = Path(__file__).resolve().parent.parent / "vct_2024"
 
+# 2026 has no dated dataset anywhere, so its dates were read from vlr.gg directly by
+# fetch_vlr_dates.py -- checked first on 2025, where it matched the Kaggle source on
+# every one of 504 matches, date and time. Only match IDs and dates are stored.
+_VLR_DATES = Path(__file__).resolve().parent.parent / "data"
+_FROM_VLR = {"vct_2026"}
+
 # vlr.gg renders a "Today"/"Yesterday" badge next to recent matches; the scrape
 # concatenated it onto the date string for 8 rows (e.g. "Sun, October 5, 2025Today").
 _BADGE = r"(Today|Yesterday|Tomorrow)\s*$"
@@ -45,7 +51,7 @@ def _date_source(season: str) -> str:
             msg = f"2024 dates expected in {_LOCAL_2024} -- see data/README.md"
             raise FileNotFoundError(msg)
         return str(_LOCAL_2024)
-    msg = f"No date source for {season}. 2026 has none: it is ordered by the VCT calendar instead."
+    msg = f"No date source for {season}."
     raise ValueError(msg)
 
 
@@ -55,6 +61,13 @@ def load_match_dates(season: str = "vct_2025") -> pd.DataFrame:
     Sort by (match_datetime, match_id) for a stable chronological order --
     concurrent matches share a timestamp, so match_id breaks those ties.
     """
+    if season in _FROM_VLR:
+        dates = pd.read_csv(_VLR_DATES / f"vlr_dates_{season}.csv",
+                            parse_dates=["match_date", "match_datetime"])
+        out = dates.assign(stage=pd.NA, week=pd.NA)[
+            ["match_id", "match_date", "match_datetime", "event", "stage", "week"]]
+        return out.sort_values(["match_datetime", "match_id"]).reset_index(drop=True)
+
     root = _date_source(season)
     files = sorted(glob.glob(os.path.join(root, "*", "matches.csv")))
     if not files:
