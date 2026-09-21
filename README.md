@@ -231,8 +231,9 @@ how many pro maps that line-up has been played on, its record, which teams playe
 and the most recent of those games. A caveat sits beside every record: results reflect the
 teams as much as the agents, and agent picks do not predict who wins.
 
-With **nothing** locked in, it shows no recommendations — just the most-played agents on that
-map lately, with their counts. Both notebooks found that from the map alone nothing beats
+With **nothing** locked in, it shows no recommendations. Instead it lists the pros' most
+common full line-ups on that map lately — real five-agent sets that teams ran, with how
+often, their record and who ran them — and then the most-played agents, with their counts. Both notebooks found that from the map alone nothing beats
 that list, and gradient boosting could misorder the obvious picks there (putting Omen fourth
 on Lotus, where pros played it in every recent line-up). So that view uses no model, and its
 ranking and its evidence are the same numbers.
@@ -290,6 +291,7 @@ Capstone-Project/
 ├── requirements.txt              # project dependencies
 ├── test_data_pull.py             # smoke test: confirms kagglehub can fetch both datasets
 ├── test_form.py                  # proves the player-form feature only looks backwards
+├── check_test_inputs.py          # reproduces notebook 12's input-only check: no bug in the test inputs
 ├── streamlit_app.py              # the demo: navigation over the two pages below
 ├── app_pages/
 │   ├── recommender.py            # the headline: pick a map, lock in agents, see the evidence

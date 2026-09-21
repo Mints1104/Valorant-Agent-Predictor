@@ -36,6 +36,7 @@ EVIDENCE_WINDOW_DAYS = 180
 MOST_PLAYED_DAYS = 90
 
 SHOWN = 5           # suggestions listed
+COMMON_SHOWN = 3    # most common full line-ups listed when nothing is locked in
 GAMES_SHOWN = 10    # past games listed for the chosen suggestion
 
 DISPLAY = {"kayo": "KAY/O"}
@@ -98,10 +99,45 @@ if not locked:
     lately = on_map[on_map["played_at"] >= last_played - pd.Timedelta(days=MOST_PLAYED_DAYS)]
     counts = pd.Series([a for lineup in lately["agents"] for a in lineup]).value_counts()
 
-    st.subheader(f"Most-played on {chosen_map} lately", divider="red")
+    # The pros' most common full line-ups: real five-agent sets that teams actually ran,
+    # so they always fit together -- five individually popular agents might not.
+    # Descriptive only; no accuracy is claimed for it.
+    window = records[(records["map"] == chosen_map)
+                     & (records["played_at"] >= last_played - pd.Timedelta(days=MOST_PLAYED_DAYS))]
+    common = (window.groupby("agents")
+              .agg(times=("won", "size"), wins=("won", "sum"), latest=("played_at", "max"))
+              .sort_values(["times", "latest"], ascending=False)
+              .head(COMMON_SHOWN))
+
+    st.subheader(f"Most common line-ups on {chosen_map} lately", divider="red")
     if last_played < data_ends - pd.Timedelta(days=30):
         st.caption(f"{chosen_map} has left the map pool. Last played {last_played:%d %B %Y}; "
                    f"showing its final {MOST_PLAYED_DAYS} days.")
+
+    def played_most_by(lineup) -> str:
+        teams = window[window["agents"] == lineup]["team"].value_counts()
+        return ", ".join(f"{team} ({n})" for team, n in teams.head(3).items())
+
+    st.dataframe(
+        pd.DataFrame({
+            "Line-up": [", ".join(display(a) for a in lineup) for lineup in common.index],
+            "Times run": [f"{n} of {len(window)}" for n in common["times"]],
+            "Record": [f"{int(w)}–{int(n - w)}" for w, n in zip(common["wins"], common["times"])],
+            "Played most by": [played_most_by(lineup) for lineup in common.index],
+        }),
+        hide_index=True,
+        column_config={
+            "Times run": st.column_config.TextColumn(
+                help=f"Out of every pro line-up on {chosen_map} in the last {MOST_PLAYED_DAYS} days "
+                     "it was played."),
+        },
+    )
+    st.caption(
+        "Real line-ups that pro teams ran, so they always fit together. Records reflect the "
+        "teams that ran them as much as the agents."
+    )
+
+    st.subheader("Most-played agents", divider="red")
     st.dataframe(
         pd.DataFrame({
             "Agent": [display(a) for a in counts.index],
