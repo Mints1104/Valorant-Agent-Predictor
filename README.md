@@ -46,8 +46,9 @@ that didn't exist yet and maps that have since left the pool.
 8. **Last feature experiments, then freeze** — done. [`notebooks/09_last_feature_experiments.ipynb`](notebooks/09_last_feature_experiments.ipynb). Combat score now stands in where rating was never recorded (kept); pulling thin records toward the average (dropped). Model frozen at 61.1%, built by `make_final_model()` in [`src/model.py`](src/model.py).
 9. **Demo** — done. [`streamlit_app.py`](streamlit_app.py) predicts a map live and lets you watch the agent picks fail to matter.
 10. **Error analysis** — done. [`notebooks/10_error_analysis.ipynb`](notebooks/10_error_analysis.ipynb). The errors have no findable structure — the model is close to a uniform 61% model. The one real pattern is that it squashes every team toward 50%.
-11. **Explainability, and the test sets** — next.
-12. **Write-up** — what worked, what didn't, and the limitations.
+11. **Explainability** — done. [`notebooks/11_explainability.ipynb`](notebooks/11_explainability.ipynb). Feature importance, a partial-dependence plot, and SHAP values checked against the `shap` library. Recent form counts about twice as much as who chose the map.
+12. **The test sets** — next. The 2025 test half first, then 2026.
+13. **Write-up** — what worked, what didn't, and the limitations.
 
 ## What we've found so far
 
@@ -133,6 +134,14 @@ This section is a correction of an earlier version of itself, which reported tha
 - **Its mistakes are not just close games.** Maps it gets wrong are decided by the same median margin as maps it gets right (5 rounds), with much the same share of close games and one-sided ones. "It only loses the toss-ups" would be a flattering story and it isn't true.
 - **It is not misjudging particular teams.** The teams it reads worst are ones whose maps it can't call, not ones it rates wrongly — it expected TALON to win 49% of their maps and they won 45%. That's variance, and no feature fixes it.
 - **The one real finding: it squashes every team toward 50%.** Across all 26 teams with 20+ maps, the slope of what happened against what it expected is **1.52**, where 1.00 would be calibrated. Its opinion of a team spans 9 points while reality spans 27. Teams that won 55%+ of their maps are under-rated by about 8 points and teams that won 45% or less are over-rated by about the same — DRX expected 51% against an actual 62%, Paper Rex 55% against 64%. Noise in its expectations would push that slope *down*, so 1.52 is the conservative reading. This is measured on every team rather than read off a slice, which is why it stands where the others don't.
+
+**What the model is keying on** ([`notebooks/11_explainability.ipynb`](notebooks/11_explainability.ipynb)). Two inputs, and nothing else goes in.
+
+- **Recent form carries about twice the weight of who chose the map**, once both are put on a common scale (0.36 against 0.18). On real maps its average push is 1.6 times as large — less than 2x because who picked is nearly always at full strength, while most rating gaps are small and 81 maps have none.
+- **Choosing the map is worth five points of win chance on an even matchup** — the same as a rating gap of 0.054. The median gap between two sides is 0.064, so on a typical map form counts for slightly more than the map choice, and on a close one the map choice counts for more.
+- **Neither input is convincing alone.** Refitting without each: rating gap only 57.7% (beats the picker rule on 2 folds of 5), who picked only 54.4%. Together, 61.1% and all 5 folds. They carry different information.
+- **The model starts every map at 50.3%** — no lean towards whichever side the data calls team A — and **both weights point the same way on every fold.**
+- **SHAP values** computed by hand match the `shap` library exactly on all 756 maps. The model's most confidently wrong call looks identical, from the inside, to its most confidently right one: both inputs pointed the same way, and the other team won.
 
 **A note on 61.1% against 61.2%, before anyone "fixes" one into the other.** 61.1% is the average of the five folds' scores and is the figure quoted everywhere else, because that is how `evaluate()` scores every model. 61.2% is the share of all 629 validation maps called correctly, pooling the folds, which is the only figure the slice table above can use — a slice cuts across folds. The folds are different sizes, so the two averages differ slightly. Both are right.
 
