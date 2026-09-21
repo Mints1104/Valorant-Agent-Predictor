@@ -14,7 +14,7 @@ line-ups or players' form can **predict who wins**.
 > ways and confirmed on unseen maps. Players' recent form gave a clear edge in development
 > (61.1%), but on the held-back test half the final model scored **54.5% against a 52.9%
 > baseline** — ahead, but within the margin of error. No line-up wins more than its agents
-> deserve once team strength is accounted for. The 2026 season is untouched.
+> deserve once team strength is accounted for. 2026's win results are still sealed.
 
 ## Problem
 
@@ -48,8 +48,9 @@ information, so their matches couldn't be put in the order they were played — 
 ordering is what stops a model being tested unfairly (see "How the model is tested" below).
 
 **The recommender uses 2024 and 2025.** A dated 2024 season turned up later: 1,104 maps from
-434 matches, every one dated. 2021–2023 are still undated. **2026 is sealed** as the final
-test set and has not been looked at. No dataset dates it, so its dates were read from vlr.gg
+434 matches, every one dated. 2021–2023 are still undated. **2026 is the final test set.**
+The recommender has been scored on it once; its win results are still sealed. No dataset
+dates it, so its dates were read from vlr.gg
 by [`fetch_vlr_dates.py`](fetch_vlr_dates.py), after that script matched the trusted 2025
 dates on all 504 matches.
 
@@ -245,7 +246,12 @@ This section is a correction of an earlier version of itself, which reported tha
 .venv/Scripts/python.exe -m streamlit run streamlit_app.py
 ```
 
-Two pages, the recommender first.
+Three pages, the recommender first.
+
+**How the meta moved.** Which agents pros played, map by map, month by month, from February
+2024 to June 2026, with the biggest movers — Neon went from almost nothing to over half of
+all line-ups. Purely descriptive, and the reason the recommender counts recent games for
+more.
 
 **Agent recommender.** Pick a map and lock in up to four agents; it suggests the next pick
 the way the pros make it. For any suggestion it shows the past pro games behind it: *"of the
@@ -316,9 +322,10 @@ Capstone-Project/
 ├── test_form.py                  # proves the player-form feature only looks backwards
 ├── check_test_inputs.py          # reproduces notebook 12's input-only check: no bug in the test inputs
 ├── fetch_vlr_dates.py            # reads match dates from vlr.gg for 2026, which no dataset dates
-├── streamlit_app.py              # the demo: navigation over the two pages below
+├── streamlit_app.py              # the demo: navigation over the three pages below
 ├── app_pages/
 │   ├── recommender.py            # the headline: pick a map, lock in agents, see the evidence
+│   ├── meta.py                   # how the meta moved: pick rates by map and month, 2024-2026
 │   └── win_predictor.py          # live win prediction, and the agent finding made visible
 ├── .streamlit/config.toml        # theme for the demo
 ├── data/
@@ -345,7 +352,8 @@ Capstone-Project/
 │   ├── 11_explainability.ipynb   # what the win model keys on: importance, partial dependence, SHAP
 │   ├── 12_test_half.ipynb        # the win model, scored once on the test half
 │   ├── 13_recommender_development.ipynb # five recommender methods, and the headline choice
-│   └── 14_recommender_test.ipynb # the recommender, tested once
+│   ├── 14_recommender_test.ipynb # the recommender, tested once on the 2025 test half
+│   └── 15_recommender_2026.ipynb # the recommender, tested once on a season it never saw
 ├── vct_2024/                     # gitignored, local only -- 2024 match dates
 ├── Valorant_2025_All_Events_International_Regional/   # gitignored, local only
 └── Valorant_Champion_Tour_2021-2026_Data/              # gitignored, local only
