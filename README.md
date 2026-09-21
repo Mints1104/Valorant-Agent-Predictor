@@ -166,15 +166,31 @@ tournaments, so no tournament is cut across both sides.
 This matters because the game changes through the year. A random split would let the model
 learn from September matches and be tested on March ones — it would already know how the
 season turned out, so its score would look strong and mean nothing. This is the most likely
-explanation for the 93% accuracy reported by one of the similar projects in
-[`existing_projects.txt`](existing_projects.txt).
+explanation for the 93% accuracy reported by one of the similar projects below.
+
+## Similar projects
+
+Three public projects on the same problem, reviewed before this one started. They are why
+this project is so careful about leakage.
+
+- **[Valorant Pro Match Analysis](https://github.com/DEF4LT-303/Valorant-Pro-Match-Analysis)** —
+  random forest predicting the winning team from players' combat score, damage per round and
+  economy rating. Reports **100% training accuracy and 93% test accuracy**. Those statistics
+  describe how the match went, so the model is being shown the result it is asked to predict.
+  This is the 93% the rest of this README refers to.
+- **[ValoAI](https://github.com/Corosso/ValoAI)** — logistic regression on team performance,
+  map win rates and match history, with an interface for entering two team names. Closest in
+  spirit to this project, including the front end.
+- **[valorant-match-predictor](https://github.com/kleinaitis/valorant-match-predictor)** —
+  logistic regression on one-hot-encoded agents, from ranked matches rather than professional
+  ones. Tests the agent question directly, which this project found carries no signal at the
+  professional level.
 
 ## Repo structure
 
 ```
 Capstone-Project/
 ├── README.md                     # this file
-├── project_idea_draft.txt        # original brainstorm notes
 ├── columns_description.csv       # data dictionary
 ├── requirements.txt              # project dependencies
 ├── test_data_pull.py             # smoke test: confirms kagglehub can fetch both datasets

@@ -10,7 +10,7 @@ damage, ratings. Those are only safe because they are turned into a record of
 *earlier* matches. If that cut-off is off by even one match, the result being
 predicted leaks into the prediction, the model scores brilliantly, and the whole
 thing is worthless. That is the exact mistake behind the 93% accuracy reported
-by one of the public projects in existing_projects.txt.
+by one of the public projects listed in README under "Similar projects".
 
 So rather than trusting that the code looks right, these checks prove it:
 

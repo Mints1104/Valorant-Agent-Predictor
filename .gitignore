@@ -13,8 +13,8 @@ venv/
 kaggle.json
 .env
 
-# Word lock/temp files
-~$*.docx
+# Office lock/temp files -- Word, PowerPoint and Excel all create ~$ files while open
+~$*
 ~WRL*.tmp
 
 # Other people's / the academy's material — not ours to publish
