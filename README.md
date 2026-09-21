@@ -6,8 +6,9 @@ line-ups or players' form can **predict who wins**.
 
 > Status: in progress. **The headline is a pro-pick recommender.** Given a map and four
 > agents already locked in, it has the pros' actual fifth pick among its three suggestions
-> **91.3%** of the time on line-ups it had never seen, against 77.3% for a naive "most-played
-> lately" rule. That test was committed before it was run.
+> **91.3%** of the time on the rest of 2025, and **87.4% on the 2026 season** — one it had
+> never seen, with new agents and an off-season in between. A naive "most-played lately" rule
+> gets 77.3% and 72.1%. Both tests were committed before they were run.
 >
 > Behind it, the win-prediction work: agent picks do not predict the winner, measured four
 > ways and confirmed on unseen maps. Players' recent form gave a clear edge in development
@@ -68,9 +69,11 @@ dates on all 504 matches.
 12. **Win model, scored once on the test half** — done. [`notebooks/12_test_half.ipynb`](notebooks/12_test_half.ipynb), committed before it was run. 54.5% against the picker rule's 52.9%: ahead, but not distinguishable from it on 516 maps.
 13. **Recommender, development** — done. [`notebooks/13_recommender_development.ipynb`](notebooks/13_recommender_development.ipynb), built by [`src/recommend.py`](src/recommend.py). Five methods compared; gradient boosting chosen as the headline by a rule written before the results.
 14. **Recommender, tested once** — done. [`notebooks/14_recommender_test.ipynb`](notebooks/14_recommender_test.ipynb), committed before it was run. 91.3% top-3 against the naive rule's 77.3%.
-15. **Recommender in the app** — next. Each recommendation shown with the past pro games behind it.
-16. **A second win model using 2024 (v2), and scoring both on 2026** — after the app.
-17. **Write-up** — what worked, what didn't, and the limitations.
+15. **Recommender in the app** — done. Each recommendation shown with the past pro games behind it, and the pros' most common full line-ups when nothing is locked in.
+16. **Recommender, tested on a new season** — done. [`notebooks/15_recommender_2026.ipynb`](notebooks/15_recommender_2026.ipynb), committed before it was run. 87.4% top-3 on 2026 against the naive rule's 72.1%. 2026's dates were read from vlr.gg by [`fetch_vlr_dates.py`](fetch_vlr_dates.py).
+17. **How the meta moved** — done. A page in the app charting which agents pros played, map by map, month by month, 2024 to 2026.
+18. **A second win model using 2024 (v2), and scoring both win models on 2026** — next. 2026's win results are still sealed.
+19. **Write-up** — what worked, what didn't, and the limitations.
 
 ## The headline: recommending agents the way the pros pick them
 
@@ -91,8 +94,26 @@ ran ([`notebooks/14_recommender_test.ipynb`](notebooks/14_recommender_test.ipynb
 
 *95% ranges from resampling whole matches.*
 
-- **It beats the naive rule by 14.0 points of top-3** (range 12.6 to 15.5), by the rule set in
-  advance.
+**Then on a season it had never seen.** The same methods and settings, unchanged, scored
+once on 2026 — January to June, after an off-season of roster changes and patches, with two
+new agents — on 1,772 line-ups, again committed before running
+([`notebooks/15_recommender_2026.ipynb`](notebooks/15_recommender_2026.ipynb)):
+
+| On 2026, four agents locked in | Pro's pick named first | Pro's pick in the top 3 |
+|---|---|---|
+| **Gradient boosting — the headline** | **65.7%** (64.0–67.3) | **87.4%** (86.1–88.6) |
+| Classifier with map × agent columns | 67.8% | 88.2% |
+| Co-occurrence | 67.7% | 86.8% |
+| Classifier, plain | 63.9% | 86.9% |
+| Naive rule | 49.7% | 72.1% |
+
+- **It beats the naive rule by 14.0 points of top-3 on the rest of 2025** (range 12.6 to 15.5),
+  **and by 15.3 on 2026** (range 14.0 to 16.6). The lead grew across the season boundary, so
+  the edge is not an accident of one half-season. Everything is a few points lower on 2026,
+  the naive rule included: a new season is harder to predict.
+- **New agents are its blind spot.** Miks and Veto, first played in 2026, were in its top three
+  43% of the time — and 0% in their first week, since it cannot recommend an agent pros have
+  not played yet. It follows the pros; it cannot anticipate them.
 - **The three best methods tie.** Gradient boosting is the headline because a rule written
   before the development results said so — best top-3 — and it was kept to.
 - **The test scored above development (91.3% against 88.0%), but the naive rule rose by

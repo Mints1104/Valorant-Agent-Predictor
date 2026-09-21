@@ -23,10 +23,14 @@ from recommend import Classifier, games_with, lineup_records, lineup_table  # no
 # The headline method and its settings, fixed in notebook 13 and tested in notebook 14.
 HALF_LIFE_DAYS = 45
 
-# From notebook 14, on 1,032 line-ups it had never been scored on. Update if retested.
+# From notebook 14, on the 2025 test half's 1,032 line-ups.
 TEST_TOP3 = 0.913
 TEST_TOP1 = 0.748
 NAIVE_TOP3 = 0.773
+
+# From notebook 15, on 2026 -- a whole season it had never seen.
+NEW_SEASON_TOP3 = 0.874
+NEW_SEASON_NAIVE_TOP3 = 0.721
 
 # "Recent" in the explanations below. Longer than the model's half-life so that a
 # sentence like "12 of 17 line-ups" rests on enough games to mean something.
@@ -284,14 +288,19 @@ if locked:
 st.subheader("How much to trust this", divider="red")
 with st.container(horizontal=True):
     st.metric("Pro's pick in its top 3", f"{TEST_TOP3:.1%}", border=True,
-              help="With four agents locked in, on 1,032 line-ups it had never seen.")
-    st.metric("Pro's pick named first", f"{TEST_TOP1:.1%}", border=True)
-    st.metric("Naive rule, top 3", f"{NAIVE_TOP3:.1%}", border=True,
-              help="Suggesting the most-played agents on this map lately.")
+              help="With four agents locked in, on the second half of 2025: 1,032 line-ups it "
+                   f"had never seen. It named the pick first {TEST_TOP1:.1%} of the time.")
+    st.metric("On a new season, top 3", f"{NEW_SEASON_TOP3:.1%}", border=True,
+              help="On 2026 — a whole season it had never seen, with new agents and an "
+                   "off-season in between. 1,772 line-ups.")
+    st.metric("Naive rule, top 3", f"{NAIVE_TOP3:.1%} / {NEW_SEASON_NAIVE_TOP3:.1%}", border=True,
+              help="Suggesting the most-played agents on this map lately — on the rest of 2025, "
+                   "then on 2026.")
     st.metric("Random guess, top 3", "≈13%", border=True)
 
 st.caption(
-    "Measured on the second half of 2025, week by week, using only games played before each "
-    "week — with the plan committed before the test ran. It measures how well it matches what "
-    "pros pick, not whether those picks win."
+    "Measured week by week, using only games played before each week — once on the second "
+    "half of 2025 and once on 2026, with each plan committed before its test ran. Its one "
+    "blind spot is brand-new agents: it can't suggest an agent pros haven't played yet. It "
+    "measures how well it matches what pros pick, not whether those picks win."
 )
