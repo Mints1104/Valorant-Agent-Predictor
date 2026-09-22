@@ -135,6 +135,9 @@ class Classifier:
         self.estimator = estimator
 
     def fit(self, history: pd.DataFrame, as_of: pd.Timestamp):
+        if history.empty:
+            msg = "Classifier: no line-ups to learn from."
+            raise ValueError(msg)
         self.agents = sorted({a for lineup in history["agents"] for a in lineup})
         self.maps = sorted(history["map"].unique())
         weight = recency_weights(history["played_at"], as_of, self.half_life)

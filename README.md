@@ -36,8 +36,9 @@ With four agents locked in, how often the pros' actual fifth pick is in its top 
   came last again on unseen maps. Its log loss was worse than saying 50/50 to every map
   (0.693): 0.760 in development, beyond what luck explains, and 0.704 on unseen maps.
 - **Player form is ahead, but not provably.** In development it beat the picker rule by 5.6
-  points (range +1.5 to +9.4), on all five folds (61.1% against 55.5%). On the test it led by 1.6 points, with a range of −3.2 to
-  +6.4. That includes zero, and it also includes the development lead.
+  points (range +1.5 to +9.4), on all five folds (61.1% against 55.5%). On the test it led
+  by 1.6 points, with a range of −3.2 to +6.4. That includes zero, and it also includes the
+  development lead.
 - **No line-up wins more than its agents deserve** once you account for the team playing it.
   The best-looking one wins 65%, but Paper Rex play 20 of its 43 maps. Seeing a realistic
   5-point effect would need about 784 maps of one line-up; the most-used has 86.
@@ -84,6 +85,15 @@ Problems found and fixed (in `src/dataset.py`):
 - "No synergy" isn't proof there is none. One season is too small to see a realistic effect.
 - The app's recommender is trained on games up to October 2025.
 
+## If it went live
+
+| | |
+|---|---|
+| Scoring | Real time. Training takes about 20 seconds; after that, each recommendation is instant |
+| Retraining | Weekly, as in the tests: the meta shifts and new agents arrive |
+| Monitoring | Each week, score last week's pro games against the naive rule and alert if the lead shrinks. Flag any new agent or map, its blind spots |
+| Data | New dates come from vlr.gg (`fetch_vlr_dates.py`). Move the pinned dataset versions on deliberately, re-running `test_form.py` and `test_edge_cases.py` |
+
 ## Run it
 
 ```bash
@@ -93,6 +103,7 @@ pip install -r requirements.txt
 python -m ipykernel install --user --name valorant-capstone   # the kernel the notebooks use
 python test_data_pull.py    # downloads the three datasets; needs a Kaggle token (data/README.md)
 python test_form.py         # proves player form only looks backwards
+python test_edge_cases.py   # feeds the pipeline awkward inputs; each must be handled
 streamlit run streamlit_app.py
 ```
 
@@ -121,7 +132,8 @@ after the first download everything runs offline.
 | 16 | Recommender with one to three agents locked in |
 
 Code is in `src/`, the app in `streamlit_app.py` and `app_pages/`, the deck in
-`presentation/`. [`progress/START_HERE.md`](progress/START_HERE.md) is a one-page cheat sheet.
+`presentation/`, with screenshots of the demo in `presentation/demo_fallback/`.
+[`progress/START_HERE.md`](progress/START_HERE.md) is a one-page cheat sheet.
 
 ## Similar projects
 
