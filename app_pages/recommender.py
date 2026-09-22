@@ -318,7 +318,7 @@ with st.container(horizontal=True):
 
 st.caption(
     "Measured week by week, using only games played before each week — once on the second "
-    "half of 2025 and once on 2026, with each plan committed before its test ran. Its one "
-    "blind spot is brand-new agents: it can't suggest an agent pros haven't played yet. It "
+    "half of 2025 and once on 2026, with each plan committed before its test ran. Its "
+    "blind spots are brand-new agents and maps, which it only learns as pros play them. It "
     "measures how well it matches what pros pick, not whether those picks win."
 )

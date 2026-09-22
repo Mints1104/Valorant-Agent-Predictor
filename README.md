@@ -20,7 +20,8 @@ With four agents locked in, how often the pros' actual fifth pick is in its top 
 - Blind spots: a brand-new map (80% on Corrode against 93% elsewhere) and brand-new agents
   (0% in their first week).
 - Gradient boosting is the headline because a rule written before any result chose it.
-  Simple co-occurrence counting ties it, so the gain comes from using the locked agents.
+  Simple co-occurrence counting comes within about a point on every test, so most of the
+  gain comes from using the locked agents, not the model type.
 - It predicts what pros pick, not what wins.
 
 ## Does picking right win?
@@ -32,10 +33,10 @@ With four agents locked in, how often the pros' actual fifth pick is in its top 
 | Agent picks, map and who picked it | 50.8% |
 
 - **Agent picks don't predict the winner.** That holds four separate ways, and the agent model
-  came last again on unseen maps. Its log loss (0.704) is worse than saying 50/50 to every
-  map (0.693).
-- **Player form is ahead, but not provably.** In development it beat the picker rule on all
-  five folds (61.1% against 55.5%). On the test it led by 1.6 points, with a range of −3.2 to
+  came last again on unseen maps. Its log loss was worse than saying 50/50 to every map
+  (0.693): 0.760 in development, beyond what luck explains, and 0.704 on unseen maps.
+- **Player form is ahead, but not provably.** In development it beat the picker rule by 5.6
+  points (range +1.5 to +9.4), on all five folds (61.1% against 55.5%). On the test it led by 1.6 points, with a range of −3.2 to
   +6.4. That includes zero, and it also includes the development lead.
 - **No line-up wins more than its agents deserve** once you account for the team playing it.
   The best-looking one wins 65%, but Paper Rex play 20 of its 43 maps. Seeing a realistic
