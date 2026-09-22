@@ -47,9 +47,14 @@ LINEUP_SIZE = 5
 # about a line-up except recency.
 SHARE_BOOST = 10.0
 
-# A whisper of the all-maps ranking, added under every per-map ranking. It only
-# decides anything when a map has no history at all (a brand-new map) or two agents
-# are otherwise tied.
+# The all-maps ranking at a millionth of its weight, added under every per-map ranking:
+# meant as a tie-breaker, and the only signal for a brand-new map. But recency weights
+# shrink a map's own votes as its last games age, so for a map that has been out of the
+# pool for a while this can outweigh them. With the naive rule's 7-day half-life it did
+# on 0.6-2.6% of the line-ups scored in notebooks 13-15 (e.g. Breeze at the start of
+# 2026); co-occurrence on 1% of 2026's. The classifiers, including the headline method
+# and the app, never use it. Left as is because the tests ran with it; a fix would scale
+# each map's votes to sum to one before adding this.
 _ALL_MAPS_WEIGHT = 1e-6
 
 

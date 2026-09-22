@@ -13,17 +13,17 @@ from kagglehub import KaggleDatasetAdapter
 DATASETS = [
     {
         "name": "VCT 2025 All Events (International + Regional)",
-        "slug": "piyush86kumar/valorant-vct-2025-all-events",
+        "slug": "piyush86kumar/valorant-vct-2025-all-events/versions/1",
         "file_path": "VCT 2025 Americas Stage 1_csvs/matches.csv",
     },
     {
         "name": "VCT 2024 All Events (dates for 2024)",
-        "slug": "piyush86kumar/valorant-champions-tour-2024-all-events",
+        "slug": "piyush86kumar/valorant-champions-tour-2024-all-events/versions/3",
         "file_path": "Champions Tour 2024 Americas Kickoff_csvs/matches.csv",
     },
     {
         "name": "VCT 2021-2026 Data",
-        "slug": "ryanluong1/valorant-champion-tour-2021-2023-data",
+        "slug": "ryanluong1/valorant-champion-tour-2021-2023-data/versions/47",
         "file_path": "vct_2025/agents/teams_picked_agents.csv",
     },
 ]

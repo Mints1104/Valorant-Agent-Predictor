@@ -21,7 +21,10 @@ from kagglehub import KaggleDatasetAdapter
 
 from dates import load_match_dates
 
-PRIMARY = "ryanluong1/valorant-champion-tour-2021-2023-data"
+# Pinned to the version every result was computed on. Unpinned, kagglehub asks Kaggle for
+# the latest version on every load: that fails with no internet, and a new upload would
+# silently change the numbers.
+PRIMARY = "ryanluong1/valorant-champion-tour-2021-2023-data/versions/47"
 SEASON = "vct_2025"
 
 # The four columns that together identify one match in this dataset.

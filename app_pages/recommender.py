@@ -28,7 +28,7 @@ TEST_TOP3 = 0.913
 TEST_TOP1 = 0.748
 NAIVE_TOP3 = 0.773
 
-# From notebook 15, on 2026 -- a whole season it had never seen.
+# From notebook 15, on 2026 -- a new season, never used to choose or tune anything.
 NEW_SEASON_TOP3 = 0.874
 NEW_SEASON_NAIVE_TOP3 = 0.721
 
@@ -271,7 +271,9 @@ if locked:
 
         with st.container(horizontal=True):
             label = "Pro maps with this line-up" if len(locked) == 4 else "Pro maps with these agents"
-            st.metric(label, f"{len(games)}", border=True)
+            st.metric(f"{label}, 2024–25", f"{len(games)}", border=True,
+                      help=f"Every pro map in 2024 and 2025 — not only the last "
+                           f"{EVIDENCE_WINDOW_DAYS} days counted in the sentence above.")
             st.metric("Their record", f"{wins}–{losses}", border=True)
             st.metric("Different teams", f"{len(teams)}", border=True)
 
@@ -307,8 +309,8 @@ with st.container(horizontal=True):
               help="With four agents locked in, on the second half of 2025: 1,032 line-ups it "
                    f"had never seen. It named the pick first {TEST_TOP1:.1%} of the time.")
     st.metric("On a new season, top 3", f"{NEW_SEASON_TOP3:.1%}", border=True,
-              help="On 2026 — a whole season it had never seen, with new agents and an "
-                   "off-season in between. 1,772 line-ups.")
+              help="On 2026 — a new season, with new agents and an off-season in between. "
+                   "Each week scored using only earlier games. 1,772 line-ups.")
     st.metric("Naive rule, top 3", f"{NAIVE_TOP3:.1%} / {NEW_SEASON_NAIVE_TOP3:.1%}", border=True,
               help="Suggesting the most-played agents on this map lately — on the rest of 2025, "
                    "then on 2026.")

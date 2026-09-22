@@ -1,17 +1,12 @@
 """Match dates for a VCT season.
 
-The VCT 2021-2026 dataset (our primary source) has no date column in any of its
-21 tables, so matches can't be ordered in time -- which a chronological
-train/test split depends on. The VCT 2025 All Events dataset does have dates,
-and both are scraped from vlr.gg, so they share a match ID space:
-`match_id` there == `Match ID` in the primary dataset's ids table.
+The main dataset has no dates, so matches can't be put in order. Everything here was
+scraped from vlr.gg, so match IDs are shared and dates can be joined on them:
 
-This builds that bridge. Verified against vct_2025: all 503 primary-dataset
-matches get a date, every tournament at 100%. Verified against vct_2024: all 434
-get a date, every tournament at 100%.
-
-Both date sources come from the same author and share one layout -- a folder per
-event, each with a matches.csv holding the date and the local start time.
+- 2024 and 2025: two Kaggle datasets by one author (a folder per event, each with a
+  matches.csv). Every match in the main dataset gets a date: 434 in 2024, 503 in 2025.
+- 2026: no dataset has dates, so fetch_vlr_dates.py read them from vlr.gg into
+  data/vlr_dates_vct_2026.csv. Match IDs and dates only.
 """
 
 import glob
@@ -21,8 +16,9 @@ from pathlib import Path
 import kagglehub
 import pandas as pd
 
-DATASET = "piyush86kumar/valorant-vct-2025-all-events"
-DATASET_2024 = "piyush86kumar/valorant-champions-tour-2024-all-events"
+# Pinned versions, for the same reasons as PRIMARY in dataset.py.
+DATASET = "piyush86kumar/valorant-vct-2025-all-events/versions/1"
+DATASET_2024 = "piyush86kumar/valorant-champions-tour-2024-all-events/versions/3"
 
 # Where each season's dates come from. 2025 and 2024 download through kagglehub like
 # the rest of the project. A `vct_2024/` folder at the repo root (gitignored, as all

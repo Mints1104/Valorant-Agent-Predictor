@@ -1,134 +1,48 @@
-# Data sources
+# The data
 
-Raw data is **not** committed to this repo (see `.gitignore`) — it's pulled from Kaggle at run time with `kagglehub`. This keeps the repo small and avoids GitHub's 100MB per-file limit, which several of the raw CSVs here exceed.
+Nothing here is committed. The raw files download through `kagglehub` and are cached on your
+machine. The versions are pinned, so after the first download everything works offline.
 
-## Setup
+## Sign in to Kaggle (once)
 
-```bash
-pip install kagglehub[pandas-datasets]
-```
+Create a token at [kaggle.com/settings/api](https://www.kaggle.com/settings/api) ("Generate
+New Token") and save it, on its own, in `~/.kaggle/access_token` (on Windows,
+`C:\Users\<you>\.kaggle\access_token`). A `.env` file or a `KAGGLE_API_KEY` variable does
+nothing; the variable kagglehub reads is `KAGGLE_API_TOKEN`. Then run
+`python test_data_pull.py` to check the downloads work.
 
-You'll need a Kaggle account and an API token the first time you run this.
+## The datasets
 
-Kaggle now issues a single API token rather than the older username-plus-key pair. Generate
-one at [kaggle.com/settings/api](https://www.kaggle.com/settings/api) ("API Tokens →
-Generate New Token"), then save the token on its own in a plain text file at
-`~/.kaggle/access_token` (on Windows, `C:\Users\<you>\.kaggle\access_token`). `kagglehub`
-picks it up from there automatically — no environment variables needed.
+| Dataset | Version | Gives us |
+|---|---|---|
+| [`ryanluong1/valorant-champion-tour-2021-2023-data`](https://www.kaggle.com/datasets/ryanluong1/valorant-champion-tour-2021-2023-data) | 47 | Results, line-ups, map picks and player stats for 2021–2026 (the name was never updated). No dates |
+| [`piyush86kumar/valorant-vct-2025-all-events`](https://www.kaggle.com/datasets/piyush86kumar/valorant-vct-2025-all-events) | 1 | 2025 match dates |
+| [`piyush86kumar/valorant-champions-tour-2024-all-events`](https://www.kaggle.com/datasets/piyush86kumar/valorant-champions-tour-2024-all-events) | 3 | 2024 match dates |
 
-Two things that don't work, and cost time if you try them:
+What each file in the main dataset holds: [`VCT_2025_DATA_SUMMARY.md`](VCT_2025_DATA_SUMMARY.md).
+Which ones the project uses, and why: [`data_sources.md`](data_sources.md).
 
-- Putting the token in a `.env` file. Nothing here reads `.env`, so it's ignored silently.
-- Naming the variable `KAGGLE_API_KEY`. If you'd rather use an environment variable than a
-  file, the name `kagglehub` actually looks for is `KAGGLE_API_TOKEN`.
+## Match dates
 
-The older `~/.kaggle/kaggle.json` still works if you already have one.
+The main dataset has no dates in any of its 21 files, and honest testing needs matches in
+order. Every source was scraped from vlr.gg, so they share match IDs, and
+[`src/dates.py`](../src/dates.py) joins the dates on them:
 
-## Dataset 1 — VCT 2025, all events (international + regional)
+| Season | Dates from | Matches dated |
+|---|---|---|
+| 2024 | The 2024 Kaggle set (a local `vct_2024/` copy is used first if present) | 434 of 434 |
+| 2025 | The 2025 Kaggle set | 503 of 503 |
+| 2026 | `vlr_dates_vct_2026.csv`, read from vlr.gg by [`fetch_vlr_dates.py`](../fetch_vlr_dates.py) | 342 of 342 |
 
-Kaggle dataset: [`piyush86kumar/valorant-vct-2025-all-events`](https://www.kaggle.com/datasets/piyush86kumar/valorant-vct-2025-all-events) — "Valorant 2025 - All Events International + Regional"
-
-Local folder this maps to: `Valorant_2025_All_Events_International_Regional/`
-
-```python
-import kagglehub
-from kagglehub import KaggleDatasetAdapter
-
-df = kagglehub.dataset_load(
-    KaggleDatasetAdapter.PANDAS,
-    "piyush86kumar/valorant-vct-2025-all-events",
-    "VCT 2025 Americas Stage 1_csvs/matches.csv",  # path within the dataset
-)
-```
-
-## Dataset 2 — VCT 2021-2026
-
-Kaggle dataset: [`ryanluong1/valorant-champion-tour-2021-2023-data`](https://www.kaggle.com/datasets/ryanluong1/valorant-champion-tour-2021-2023-data) — the dataset's slug still says `2021-2023` (Kaggle doesn't rename slugs when a dataset is updated), but the page title is "Valorant Champion Tour 2021-2026 Data" and it now covers 2021-2026. Use the slug below as-is.
-
-Local folder this maps to: `Valorant_Champion_Tour_2021-2026_Data/`
-
-```python
-import kagglehub
-from kagglehub import KaggleDatasetAdapter
-
-file_path = "vct_2025/agents/teams_picked_agents.csv"  # path within the dataset
-
-df = kagglehub.dataset_load(
-    KaggleDatasetAdapter.PANDAS,
-    "ryanluong1/valorant-champion-tour-2021-2023-data",
-    file_path,
-)
-
-print(df.head())
-```
-
-Key files for the composition-synergy / win-prediction angle:
-- `vct_<year>/matches/draft_phase.csv` — pick/ban phase per map per team
-- `vct_<year>/agents/teams_picked_agents.csv` — team + map + agent picks with wins/losses attached
-- `vct_<year>/matches/overview.csv` — per-player, per-map stats (rating, ACS, KAST, etc.)
-- `vct_<year>/matches/maps_scores.csv`, `scores.csv` — match/map results for the win-prediction target
-
-Avoid loading `kills.csv` / `rounds_kills.csv` for 2021-2022 unless you need round-by-round detail — they're the largest files (120-150MB each) and are overkill for match/map-level analysis.
-
-## Match dates (the two datasets share a match ID space)
-
-Dataset 2 has **no date column in any of its 21 tables** — verified by scanning
-every file. That's a problem, because a chronological train/test split is what
-stops patch/meta leakage between train and test.
-
-Dataset 1 supplies the missing dates. Both are scraped from vlr.gg, so the IDs
-line up: `match_id` in Dataset 1 is the same value as `Match ID` in Dataset 2's
-`ids/tournaments_stages_matches_games_ids.csv`. Verified for 2025 — all 503
-Dataset 2 matches get a date, every tournament at 100% coverage.
-
-Use [`src/dates.py`](../src/dates.py):
-
-```python
-from dates import load_match_dates
-
-dates = load_match_dates()   # match_id, match_date, match_datetime, event, stage, week
-```
-
-Two gotchas it handles, both worth knowing about:
-
-- **8 dates don't parse raw.** vlr.gg shows a "Today"/"Yesterday" badge on recent
-  matches and the scrape glued it onto the string (`"Sun, October 5, 2025Today"`).
-  Stripping that suffix leaves 0 failures, and weekday names then agree with the
-  parsed dates on all 504 rows.
-- **Ties.** 10 rows share an exact timestamp (concurrent matches on different
-  streams), so sort by `(match_datetime, match_id)` for a stable order.
-
-`match_id` correlates with time (Spearman 0.979) but is **not** monotonic — it
-decreases against the clock in 182 places — so order by the date, not the ID.
-
-### 2024 dates
-
-`load_match_dates("vct_2024")` reads dates for the 2024 season from a folder called
-`vct_2024/` at the repo root. It is gitignored like all raw data. It is the Kaggle dataset
-[`piyush86kumar/valorant-champions-tour-2024-all-events`](https://www.kaggle.com/datasets/piyush86kumar/valorant-champions-tour-2024-all-events)
-("Complete Valorant Champions Tour 2024 - All events", about 4 MB), by the same author as the
-2025 date source, with the same layout: one folder per event, each with a `matches.csv`.
-Checked on 2026-09-22: the local folder and the Kaggle dataset hold the same 144 files, at the
-same sizes. It dates all 434 of the main dataset's 2024 matches, every event at 100%.
-
-If there is no `vct_2024/` folder, `load_match_dates` downloads the same dataset through
-`kagglehub`, like everything else — so a fresh checkout needs nothing extra. The folder, when
-present, is used first; both give identical dates and an identical 2024 map table (checked
-2026-09-22). The recommender (notebooks 13 to 16, the recommender and meta pages of the app)
-needs 2024; the win model does not.
-
-The same ID trap applies: in 2024, `match_id` runs against the clock in 160 places.
-
-### 2026 dates
-
-No dataset dates 2026, so [`fetch_vlr_dates.py`](../fetch_vlr_dates.py) read them from
-vlr.gg, the site every dataset here was scraped from, one event page at a time. It keeps
-match IDs, dates and the event name — never scores. Before being trusted it was run on 2025
-(`data/vlr_dates_vct_2025.csv`) and matched the Kaggle date source on all 504 matches, date
-and time, once vlr.gg's UK times were converted to the Kaggle source's Indian time. The 2026
-file, `data/vlr_dates_vct_2026.csv`, is committed, so nothing needs re-fetching:
-`load_match_dates("vct_2026")` reads it directly.
+- **Order by date, never by match ID.** IDs mostly rise over time but run backwards in 182
+  places in 2025, and 160 in 2024.
+- **Concurrent matches share a timestamp**, so sort by `(match_datetime, match_id)`.
+- **Eight 2025 dates had "Today" or "Yesterday" glued on** by the scrape. `dates.py` strips it.
+- **The vlr.gg script was checked on 2025 first.** It matched the Kaggle dates on all 504
+  matches once vlr.gg's UK times were converted to the Kaggle source's Indian time. It stores
+  match IDs and dates only, never scores.
 
 ## Column reference
 
-See [`columns_description.csv`](../columns_description.csv) (tracked in the repo) for the field-by-field dictionary — it's small and mostly still applies to Dataset 2's equivalent tables, though some column names differ slightly (check headers when in doubt).
+[`columns_description.csv`](../columns_description.csv) is the dataset's own field dictionary.
+A few column names differ slightly from the files, so check the headers.
