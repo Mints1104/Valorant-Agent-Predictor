@@ -4,7 +4,7 @@ A data science project. Uses VALORANT Champions Tour (VCT) esports data to
 **recommend agents the way professional teams pick them**, and asks whether agent picks,
 line-ups or players' form can **predict who wins**.
 
-> Status: in progress. **The headline is a pro-pick recommender.** Given a map and four
+> Status: complete, ahead of the demo on Friday 25 September 2026. **The headline is a pro-pick recommender.** Given a map and four
 > agents already locked in, it has the pros' actual fifth pick among its three suggestions
 > **91.3%** of the time on the rest of 2025, and **87.4% on the 2026 season** — one it had
 > never seen, with new agents and an off-season in between. A naive "most-played lately" rule
@@ -75,8 +75,8 @@ dates on all 504 matches.
 16. **Recommender, tested on a new season** — done. [`notebooks/15_recommender_2026.ipynb`](notebooks/15_recommender_2026.ipynb), committed before it was run. 87.4% top-3 on 2026 against the naive rule's 72.1%. 2026's dates were read from vlr.gg by [`fetch_vlr_dates.py`](fetch_vlr_dates.py).
 17. **Recommender with one, two or three agents locked in** — done, on development data only. [`notebooks/16_recommender_partial_locks.ipynb`](notebooks/16_recommender_partial_locks.ipynb). Its lead over the naive rule grows with every agent locked in.
 18. **How the meta moved** — done. A page in the app charting which agents pros played, map by map, month by month, 2024 to 2026.
-19. **A second win model using 2024 (v2), and scoring both win models on 2026** — next. 2026's win results are still sealed.
-20. **Write-up** — what worked, what didn't, and the limitations.
+19. **A second win model using 2024 (v2), and scoring both win models on 2026** — not started, and optional. 2026's win results are still sealed.
+20. **Write-up** — done. This README, the deck in [`presentation/`](presentation/), and the daily logs in [`progress/`](progress/).
 
 ## The headline: recommending agents the way the pros pick them
 
