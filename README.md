@@ -72,9 +72,10 @@ dates on all 504 matches.
 14. **Recommender, tested once** — done. [`notebooks/14_recommender_test.ipynb`](notebooks/14_recommender_test.ipynb), committed before it was run. 91.3% top-3 against the naive rule's 77.3%.
 15. **Recommender in the app** — done. Each recommendation shown with the past pro games behind it, and the pros' most common full line-ups when nothing is locked in.
 16. **Recommender, tested on a new season** — done. [`notebooks/15_recommender_2026.ipynb`](notebooks/15_recommender_2026.ipynb), committed before it was run. 87.4% top-3 on 2026 against the naive rule's 72.1%. 2026's dates were read from vlr.gg by [`fetch_vlr_dates.py`](fetch_vlr_dates.py).
-17. **How the meta moved** — done. A page in the app charting which agents pros played, map by map, month by month, 2024 to 2026.
-18. **A second win model using 2024 (v2), and scoring both win models on 2026** — next. 2026's win results are still sealed.
-19. **Write-up** — what worked, what didn't, and the limitations.
+17. **Recommender with one, two or three agents locked in** — done, on development data only. [`notebooks/16_recommender_partial_locks.ipynb`](notebooks/16_recommender_partial_locks.ipynb). Its lead over the naive rule grows with every agent locked in.
+18. **How the meta moved** — done. A page in the app charting which agents pros played, map by map, month by month, 2024 to 2026.
+19. **A second win model using 2024 (v2), and scoring both win models on 2026** — next. 2026's win results are still sealed.
+20. **Write-up** — what worked, what didn't, and the limitations.
 
 ## The headline: recommending agents the way the pros pick them
 
@@ -123,6 +124,11 @@ new agents — on 1,772 line-ups, again committed before running
   17 points to 14.
 - **Its value is in completing a line-up.** Given only the map, nothing beats the naive rule:
   every method recovers about 3.3–3.4 of the pros' five agents.
+- **Its lead grows with every agent locked in.** Measured afterwards on the development data
+  only ([`notebooks/16_recommender_partial_locks.ipynb`](notebooks/16_recommender_partial_locks.ipynb)),
+  the share of the rest of the line-up it gets right, against the naive rule: −3.0 points with
+  none locked, +1.4 with one, +6.7 with two, +12.8 with three, +19.3 with four. The naive rule
+  ignores the locked agents; the recommender uses them.
 - **A brand-new map costs about 13 points** — 80.1% top-3 on Corrode, which arrived with no
   history, against 93.0% elsewhere.
 - **It measures imitation, not winning.** It knows what the pros play; the win-prediction
@@ -353,7 +359,8 @@ Capstone-Project/
 │   ├── 12_test_half.ipynb        # the win model, scored once on the test half
 │   ├── 13_recommender_development.ipynb # five recommender methods, and the headline choice
 │   ├── 14_recommender_test.ipynb # the recommender, tested once on the 2025 test half
-│   └── 15_recommender_2026.ipynb # the recommender, tested once on a season it never saw
+│   ├── 15_recommender_2026.ipynb # the recommender, tested once on a season it never saw
+│   └── 16_recommender_partial_locks.ipynb # with 1, 2 or 3 agents locked in (development data)
 ├── vct_2024/                     # gitignored, local only -- 2024 match dates
 ├── Valorant_2025_All_Events_International_Regional/   # gitignored, local only
 └── Valorant_Champion_Tour_2021-2026_Data/              # gitignored, local only
