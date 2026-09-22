@@ -32,6 +32,10 @@ NAIVE_TOP3 = 0.773
 NEW_SEASON_TOP3 = 0.874
 NEW_SEASON_NAIVE_TOP3 = 0.721
 
+# From notebook 16, on development data only: the share of the rest of the line-up filled in
+# with agents the pros actually played, by how many are locked in -- (recommender, naive rule).
+PARTIAL_LOCK = {1: (0.640, 0.626), 2: (0.660, 0.593), 3: (0.676, 0.548), 4: (0.682, 0.489)}
+
 # "Recent" in the explanations below. Longer than the model's half-life so that a
 # sentence like "12 of 17 line-ups" rests on enough games to mean something.
 EVIDENCE_WINDOW_DAYS = 180
@@ -77,7 +81,8 @@ all_agents = model.agents
 st.title("What would the pros pick?")
 st.caption(
     "What would a professional team pick next? Trained on every VCT line-up from "
-    f"February 2024 to {data_ends:%B %Y}, with recent games counting for more."
+    f"February 2024 to {data_ends:%B %Y}, with recent games counting for more — so it "
+    f"reflects the meta as of {data_ends:%B %Y}. It was tested separately on the 2026 season."
 )
 
 with st.container(border=True):
@@ -214,6 +219,17 @@ if locked:
     st.caption(
         "Completing the line-up one pick at a time gives: **"
         + ", ".join(display(a) for a in completion) + "**"
+    )
+    ours, naive = PARTIAL_LOCK[len(locked)]
+    lead = (ours - naive) * 100
+    st.caption(
+        f"With {len(locked)} agent{'s' if len(locked) > 1 else ''} locked in, the recommender "
+        f"filled in {ours:.0%} of the rest of the line-up with agents the pros actually played, "
+        f"against {naive:.0%} for simply listing the most-played agents — "
+        + (f"only just ahead ({lead:+.1f} points)" if lead < 3 else f"{lead:.0f} points better")
+        + ". The more you lock in, the bigger its lead. Measured on development data (notebook 16)."
+        + (f" With one agent left, that counts its first suggestion only; the pros' pick was in "
+           f"its top three {TEST_TOP3:.0%} of the time on the test." if len(locked) == 4 else "")
     )
 
     # ---------------------------------------------------------------- why: the games behind it

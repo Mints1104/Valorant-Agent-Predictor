@@ -31,13 +31,14 @@ describes what the pros *do* rather than claiming its picks win.
 
 ## Data
 
-Two Kaggle datasets, not committed to this repo (see [`data/README.md`](data/README.md) for how to fetch them via `kagglehub`):
+Kaggle datasets, not committed to this repo (see [`data/README.md`](data/README.md) for how to fetch them via `kagglehub`):
 
 | Dataset | Coverage | Role |
 |---|---|---|
 | VCT 2021-2026 Data | 2021–2026, all regions | Primary source — match results, agent picks, and the map pick/ban phase |
 | VCT 2025 All Events (Int'l + Regional) | 2025 only | Supplies the match **dates**, which the primary source has none of. The two share the same match reference numbers |
-| VCT 2024 (same author as the 2025 source) | 2024 only | Supplies the 2024 match dates the same way — every 2024 match, 100%. Read from a local `vct_2024/` folder; see [`data/README.md`](data/README.md) |
+| [VCT 2024, all events](https://www.kaggle.com/datasets/piyush86kumar/valorant-champions-tour-2024-all-events) (same author as the 2025 source) | 2024 only | Supplies the 2024 match dates the same way — every 2024 match, 100%. Downloaded through `kagglehub` like the others; a local `vct_2024/` copy is used instead if present |
+| vlr.gg, read by [`fetch_vlr_dates.py`](fetch_vlr_dates.py) | 2026 only | Match dates for 2026, which no dataset has. Stored in `data/vlr_dates_vct_2026.csv` — match IDs and dates only |
 
 Field-level definitions: [`columns_description.csv`](columns_description.csv).
 
@@ -283,8 +284,8 @@ project's main finding into something you can watch happen rather than something
 to assert — and the caption underneath points out that the number doing all the moving
 belongs to the model that loses to the baseline.
 
-The app states its own accuracy against both baselines and warns that four points over a
-one-sentence rule is a lean rather than a prediction. Team ratings shown there use the
+The app states its own accuracy against both baselines and warns that 1.6 points over a
+one-sentence rule on unseen maps is a lean rather than a prediction. Team ratings shown there use the
 whole season, since a live prediction would be for a match played after all of it; the
 model itself was trained only on the first half.
 
@@ -296,8 +297,9 @@ tournaments, so no tournament is cut across both sides.
 
 This matters because the game changes through the year. A random split would let the model
 learn from September matches and be tested on March ones — it would already know how the
-season turned out, so its score would look strong and mean nothing. This is the most likely
-explanation for the 93% accuracy reported by one of the similar projects below.
+season turned out, so its score would look strong and mean nothing. It is the same family of
+mistake as the 93% accuracy reported by one of the similar projects below, which predicts a
+map's winner from statistics recorded during that map.
 
 ## Similar projects
 
@@ -324,7 +326,7 @@ Capstone-Project/
 ├── README.md                     # this file
 ├── columns_description.csv       # data dictionary
 ├── requirements.txt              # project dependencies
-├── test_data_pull.py             # smoke test: confirms kagglehub can fetch both datasets
+├── test_data_pull.py             # smoke test: confirms kagglehub can fetch all three datasets
 ├── test_form.py                  # proves the player-form feature only looks backwards
 ├── check_test_inputs.py          # reproduces notebook 12's input-only check: no bug in the test inputs
 ├── fetch_vlr_dates.py            # reads match dates from vlr.gg for 2026, which no dataset dates
@@ -336,9 +338,11 @@ Capstone-Project/
 ├── .streamlit/config.toml        # theme for the demo
 ├── data/
 │   ├── README.md                 # how to fetch the raw data, and how dates are handled
-│   └── VCT_2025_DATA_SUMMARY.md  # file-by-file notes on what each CSV contains
+│   ├── VCT_2025_DATA_SUMMARY.md  # file-by-file notes on what each CSV contains
+│   ├── data_sources.md           # which file to use for what, and the players_stats.csv trap
+│   └── vlr_dates_vct_202[56].csv # match dates read from vlr.gg: 2025 as the check, 2026 for use
 ├── src/
-│   ├── dates.py                  # match dates, bridged from the second dataset
+│   ├── dates.py                  # match dates for 2024-2026, bridged by match ID
 │   ├── dataset.py                # builds the main table (one row per map played)
 │   ├── features.py               # turns line-ups into numbers a model can read
 │   ├── form.py                   # how the ten players had been playing, earlier matches only
@@ -361,7 +365,7 @@ Capstone-Project/
 │   ├── 14_recommender_test.ipynb # the recommender, tested once on the 2025 test half
 │   ├── 15_recommender_2026.ipynb # the recommender, tested once on a season it never saw
 │   └── 16_recommender_partial_locks.ipynb # with 1, 2 or 3 agents locked in (development data)
-├── vct_2024/                     # gitignored, local only -- 2024 match dates
+├── vct_2024/                     # gitignored, optional local copy of the 2024 dates dataset
 ├── Valorant_2025_All_Events_International_Regional/   # gitignored, local only
 └── Valorant_Champion_Tour_2021-2026_Data/              # gitignored, local only
 ```
@@ -378,7 +382,7 @@ Raw data folders exist locally but aren't tracked in git (see `.gitignore`) — 
 python -m venv .venv
 .venv\Scripts\activate        # Windows (PowerShell: .venv\Scripts\Activate.ps1)
 pip install -r requirements.txt
-python test_data_pull.py      # confirms kagglehub can pull both datasets
+python test_data_pull.py      # confirms kagglehub can pull all three datasets
 ```
 
 See [`data/README.md`](data/README.md) for dataset-loading snippets.

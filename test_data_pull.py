@@ -1,11 +1,10 @@
 """
-Smoke test: confirms kagglehub can pull a file from each of the two
+Smoke test: confirms kagglehub can pull a file from each of the three
 project datasets. Run with the venv's Python:
 
     .venv\\Scripts\\python.exe test_data_pull.py
 
-Requires a Kaggle API token at ~/.kaggle/kaggle.json (or KAGGLE_USERNAME /
-KAGGLE_KEY env vars) — see https://github.com/Kaggle/kagglehub#authenticate
+Requires a Kaggle API token at ~/.kaggle/access_token -- see data/README.md.
 """
 
 import kagglehub
@@ -16,6 +15,11 @@ DATASETS = [
         "name": "VCT 2025 All Events (International + Regional)",
         "slug": "piyush86kumar/valorant-vct-2025-all-events",
         "file_path": "VCT 2025 Americas Stage 1_csvs/matches.csv",
+    },
+    {
+        "name": "VCT 2024 All Events (dates for 2024)",
+        "slug": "piyush86kumar/valorant-champions-tour-2024-all-events",
+        "file_path": "Champions Tour 2024 Americas Kickoff_csvs/matches.csv",
     },
     {
         "name": "VCT 2021-2026 Data",

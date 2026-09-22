@@ -104,14 +104,30 @@ decreases against the clock in 182 places — so order by the date, not the ID.
 ### 2024 dates
 
 `load_match_dates("vct_2024")` reads dates for the 2024 season from a folder called
-`vct_2024/` at the repo root. It is gitignored like all raw data. It comes from the same
-author as the 2025 date source and has the same layout: one folder per event, each with a
-`matches.csv`. It dates all 434 of the main dataset's 2024 matches, every event at 100%.
+`vct_2024/` at the repo root. It is gitignored like all raw data. It is the Kaggle dataset
+[`piyush86kumar/valorant-champions-tour-2024-all-events`](https://www.kaggle.com/datasets/piyush86kumar/valorant-champions-tour-2024-all-events)
+("Complete Valorant Champions Tour 2024 - All events", about 4 MB), by the same author as the
+2025 date source, with the same layout: one folder per event, each with a `matches.csv`.
+Checked on 2026-09-22: the local folder and the Kaggle dataset hold the same 144 files, at the
+same sizes. It dates all 434 of the main dataset's 2024 matches, every event at 100%.
 
-Unlike the rest of the data, it is not downloaded through `kagglehub`. Put the folder in
-place by hand. `load_match_dates` raises a clear error, naming the folder, if it is missing.
+If there is no `vct_2024/` folder, `load_match_dates` downloads the same dataset through
+`kagglehub`, like everything else — so a fresh checkout needs nothing extra. The folder, when
+present, is used first; both give identical dates and an identical 2024 map table (checked
+2026-09-22). The recommender (notebooks 13 to 16, the recommender and meta pages of the app)
+needs 2024; the win model does not.
 
 The same ID trap applies: in 2024, `match_id` runs against the clock in 160 places.
+
+### 2026 dates
+
+No dataset dates 2026, so [`fetch_vlr_dates.py`](../fetch_vlr_dates.py) read them from
+vlr.gg, the site every dataset here was scraped from, one event page at a time. It keeps
+match IDs, dates and the event name — never scores. Before being trusted it was run on 2025
+(`data/vlr_dates_vct_2025.csv`) and matched the Kaggle date source on all 504 matches, date
+and time, once vlr.gg's UK times were converted to the Kaggle source's Indian time. The 2026
+file, `data/vlr_dates_vct_2026.csv`, is committed, so nothing needs re-fetching:
+`load_match_dates("vct_2026")` reads it directly.
 
 ## Column reference
 

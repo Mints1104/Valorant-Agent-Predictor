@@ -22,10 +22,12 @@ import kagglehub
 import pandas as pd
 
 DATASET = "piyush86kumar/valorant-vct-2025-all-events"
+DATASET_2024 = "piyush86kumar/valorant-champions-tour-2024-all-events"
 
-# Where each season's dates come from. 2025 downloads through kagglehub like the
-# rest of the project. 2024 is read from a folder at the repo root (gitignored,
-# as all raw data is) -- see data/README.md for where to get it.
+# Where each season's dates come from. 2025 and 2024 download through kagglehub like
+# the rest of the project. A `vct_2024/` folder at the repo root (gitignored, as all
+# raw data is) is used instead if present: it is the same dataset, checked file for
+# file, and it is where the 2024 dates were first read from.
 _LOCAL_2024 = Path(__file__).resolve().parent.parent / "vct_2024"
 
 # 2026 has no dated dataset anywhere, so its dates were read from vlr.gg directly by
@@ -47,10 +49,9 @@ def _date_source(season: str) -> str:
     if season == "vct_2025":
         return kagglehub.dataset_download(DATASET)
     if season == "vct_2024":
-        if not _LOCAL_2024.is_dir():
-            msg = f"2024 dates expected in {_LOCAL_2024} -- see data/README.md"
-            raise FileNotFoundError(msg)
-        return str(_LOCAL_2024)
+        if _LOCAL_2024.is_dir():
+            return str(_LOCAL_2024)
+        return kagglehub.dataset_download(DATASET_2024)
     msg = f"No date source for {season}."
     raise ValueError(msg)
 
