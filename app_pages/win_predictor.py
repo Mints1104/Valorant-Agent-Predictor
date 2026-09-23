@@ -119,7 +119,7 @@ with st.sidebar:
         default="Neither (decider)",
     ) or "Neither (decider)"
 
-    st.caption("The decider is the map left after both sides ban: 18% of maps.")
+    st.caption("The decider is the map left after both sides ban: 18% of games.")
 
 picked_value = {"Team A": 1, "Team B": -1, "Neither (decider)": 0}[picked_by]
 map_background(chosen_map)
@@ -168,7 +168,7 @@ for side, (column, team) in enumerate([(left, team_a), (right, team_b)]):
             st.metric("Player rating", f"{row['rating']:.3f}", border=True)
             st.metric("Combat score", f"{row['acs']:.0f}", border=True)
         st.caption(f"Current roster: {row['players']}")
-        st.caption(f"Averaging {row['maps_played']:.0f} maps of history per player")
+        st.caption(f"Averaging {row['maps_played']:.0f} games of history per player")
 
 # ---------------------------------------------------------------- the agent demo
 st.header("Now change the agents", divider="red")
@@ -205,7 +205,7 @@ with st.container(horizontal=True):
         delta_color="off",
         delta_arrow="off",
         border=True,
-        help=f"{TEST_FORM_ACCURACY:.1%} on unseen maps, against {TEST_PICKER_ACCURACY:.1%} "
+        help=f"{TEST_FORM_ACCURACY:.1%} on unseen games, against {TEST_PICKER_ACCURACY:.1%} "
              "for guessing whoever picked the map.",
     )
     st.metric(
@@ -215,12 +215,12 @@ with st.container(horizontal=True):
         delta_color="off",
         delta_arrow="off",
         border=True,
-        help=f"{TEST_AGENT_ACCURACY:.1%} on unseen maps, below the picker rule's "
+        help=f"{TEST_AGENT_ACCURACY:.1%} on unseen games, below the picker rule's "
              f"{TEST_PICKER_ACCURACY:.1%}.",
     )
 
 st.caption(
-    f"The agent model moves, but on unseen maps it scored {TEST_AGENT_ACCURACY:.1%}, below the "
+    f"The agent model moves, but on unseen games it scored {TEST_AGENT_ACCURACY:.1%}, below the "
     f"{TEST_PICKER_ACCURACY:.1%} of guessing whoever picked the map."
 )
 
@@ -228,18 +228,18 @@ st.caption(
 st.header("How much to trust this", divider="red")
 
 with st.container(horizontal=True):
-    st.metric("On unseen maps", f"{TEST_FORM_ACCURACY:.1%}", border=True)
+    st.metric("On unseen games", f"{TEST_FORM_ACCURACY:.1%}", border=True)
     st.metric("Guess whoever picked the map", f"{TEST_PICKER_ACCURACY:.1%}", border=True)
     st.metric("Guess at random", "50.0%", border=True)
 
 st.caption(
-    f"Scored once on 516 unseen maps, with the plan written down first. In development it scored "
+    f"Scored once on 516 unseen games, with the plan written down first. In development it scored "
     f"{DEV_FORM_ACCURACY:.1%}, which was optimistic."
 )
 
 st.warning(
     f"**{(TEST_FORM_ACCURACY - TEST_PICKER_ACCURACY) * 100:.1f} points better than a one-sentence "
-    "rule on unseen maps: inside the margin of error.** Top teams are close to coin flips, so "
+    "rule on unseen games: inside the margin of error.** Top teams are close to coin flips, so "
     "treat this as a lean, not a prediction.",
     icon=":material/warning:",
 )
@@ -249,12 +249,12 @@ with st.expander("What the model actually does", icon=":material/help:"):
         f"""
 **Two inputs:**
 
-- **The players' rating gap**, from every map those ten players had already played that
-  season, a map {HALF_LIFE} maps back counting half. Combat score stands in where rating
+- **The players' rating gap**, from every game those ten players had already played that
+  season, a game {HALF_LIFE} games back counting half. Combat score stands in where rating
   wasn't recorded (much of China early in the season).
 - **Who chose the map:** team A, team B, or nobody.
 
-A logistic regression turns them into a probability. Fitted on the {len(learn):,} maps up to
+A logistic regression turns them into a probability. Fitted on the {len(learn):,} games up to
 late June 2025, then scored once on the {len(maps) - len(learn):,} after: {TEST_FORM_ACCURACY:.1%}
 against {TEST_PICKER_ACCURACY:.1%} for guessing whoever picked the map.
 
@@ -268,7 +268,7 @@ from {DEV_FORM_ACCURACY:.1%} to about 55% in development.
 with st.expander("Where the numbers come from", icon=":material/database:"):
     st.markdown(
         f"""
-{len(maps):,} maps from VCT 2025. The ratings below use the whole season, since a live
+{len(maps):,} games from VCT 2025. The ratings below use the whole season, since a live
 prediction is for a match after it; the model itself was trained on the first half only.
 Chinese teams' ratings rest on fewer maps, because rating was often not recorded there.
         """
