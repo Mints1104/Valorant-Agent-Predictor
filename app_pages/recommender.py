@@ -161,7 +161,7 @@ if not locked:
                      "it was played."),
         },
     )
-    st.caption("Real line-ups pro teams ran. Records reflect the teams as much as the agents.")
+    st.caption("Real line-ups pro teams ran. Records reflect the teams too, not just the agents.")
 
     st.subheader("Most-played agents", divider="red")
     st.dataframe(
@@ -279,9 +279,9 @@ if locked:
         teams = games["team"].value_counts()
 
         with st.container(horizontal=True):
-            label = "Pro maps with this line-up" if len(locked) == 4 else "Pro maps with these agents"
+            label = "Pro games with this line-up" if len(locked) == 4 else "Pro games with these agents"
             st.metric(f"{label}, 2024–25", f"{len(games)}", border=True,
-                      help=f"Every pro map in 2024 and 2025, not only the last "
+                      help=f"Every pro game in 2024 and 2025, not only the last "
                            f"{EVIDENCE_WINDOW_DAYS} days counted in the sentence above.")
             st.metric("Their record", f"{wins}–{losses}", border=True)
             st.metric("Different teams", f"{len(teams)}", border=True)
@@ -289,7 +289,7 @@ if locked:
         most = ", ".join(f"{team} ({n})" for team, n in teams.head(4).items())
         st.caption(f"Played most by: {most}.")
         st.warning(
-            "**Records reflect the teams as much as the agents.** Read them as what pros play, "
+            "**Records reflect the teams too, not just the agents.** Read them as what pros play, "
             "not what wins.",
             icon=":material/balance:",
         )
@@ -319,7 +319,7 @@ with st.container(horizontal=True):
     st.metric("On a new season, top 3", f"{NEW_SEASON_TOP3:.1%}", border=True,
               help="On 2026, a new season with new agents and an off-season in between. "
                    "Each week scored using only earlier games. 1,772 line-ups.")
-    st.metric("Naive rule, top 3", f"{NAIVE_TOP3:.1%} / {NEW_SEASON_NAIVE_TOP3:.1%}", border=True,
+    st.metric("Most-played rule, top 3", f"{NAIVE_TOP3:.1%} / {NEW_SEASON_NAIVE_TOP3:.1%}", border=True,
               help="Suggesting the most-played agents on this map lately. Scored on the rest of "
                    "2025, then on 2026.")
     st.metric("Random guess, top 3", "≈13%", border=True)
