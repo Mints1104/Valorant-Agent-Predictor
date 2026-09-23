@@ -31,17 +31,18 @@ RED = "#ff4655"
 # so tables are drawn as HTML (glass_table). Bordered containers opt in with a key starting
 # "glass" (Streamlit adds the class st-key-<key>); metrics and expanders get it everywhere.
 # Coloured boxes (st.info, st.warning) get a dark base under their see-through tint and off-white
-# text. Captions are shown at full opacity (Streamlit dims them to 60% with `opacity`, not colour)
-# with a strong shadow; dimmed grey text vanishes on a busy picture.
+# text. All text on the page, headings included, gets a strong dark shadow so it reads on any
+# part of any map; captions are also shown at full opacity (Streamlit dims them to 60% with
+# `opacity`, not colour), since dimmed grey text vanishes on a busy picture.
 GLASS = "background: rgba(15, 25, 35, 0.45); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+SHADOW = "0 1px 2px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.8)"
 GLASS_CSS = f"""<style>
 [class*="st-key-glass"], [data-testid="stMetric"], [data-testid="stExpander"] details {{ {GLASS} }}
 [data-testid="stAlert"] {{ background: rgba(15, 25, 35, 0.82); border-radius: 8px; }}
 [data-testid="stAlert"] p {{ color: #ece8e1; }}
 [class*="st-key-glass"] [data-testid="stMetric"] {{ background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }}
-[data-testid="stMainBlockContainer"] {{ text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55); }}
-[data-testid="stMainBlockContainer"] [data-testid="stCaptionContainer"] {{ opacity: 1; color: rgba(236, 232, 225, 0.85);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.8); }}
+[data-testid="stMainBlockContainer"], [data-testid="stMainBlockContainer"] :is(h1, h2, h3, h4) {{ text-shadow: {SHADOW}; }}
+[data-testid="stMainBlockContainer"] [data-testid="stCaptionContainer"] {{ opacity: 1; color: rgba(236, 232, 225, 0.85); }}
 .glass-table {{ width: 100%; border-collapse: separate; border-spacing: 0; font-size: 15px; color: #ece8e1;
   {GLASS} border: 1px solid rgba(255, 255, 255, 0.10); border-radius: 12px; overflow: hidden; }}
 .glass-table th {{ text-align: left; font-weight: 600; font-size: 14px; color: #a9b3bd; padding: 10px 14px;
