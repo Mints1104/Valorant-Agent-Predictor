@@ -193,7 +193,7 @@ if locked:
     def recent_share(agent: str) -> str:
         """'12 of 17': of the recent line-ups on this map with the locked agents, how many ran this one."""
         if with_locked.empty:
-            return "—"
+            return "No recent line-ups"
         ran_it = with_locked["agents"].map(lambda lineup: agent in lineup).sum()
         return f"{ran_it} of {len(with_locked)}"
 
@@ -281,7 +281,7 @@ if locked:
         with st.container(horizontal=True):
             label = "Pro maps with this line-up" if len(locked) == 4 else "Pro maps with these agents"
             st.metric(f"{label}, 2024–25", f"{len(games)}", border=True,
-                      help=f"Every pro map in 2024 and 2025 — not only the last "
+                      help=f"Every pro map in 2024 and 2025, not only the last "
                            f"{EVIDENCE_WINDOW_DAYS} days counted in the sentence above.")
             st.metric("Their record", f"{wins}–{losses}", border=True)
             st.metric("Different teams", f"{len(teams)}", border=True)
@@ -313,15 +313,15 @@ if locked:
 # ---------------------------------------------------------------- how much to trust it
 st.subheader("How much to trust this", divider="red")
 with st.container(horizontal=True):
-    st.metric("Pro's pick in its top 3", f"{TEST_TOP3:.1%}", border=True,
+    st.metric("Pros' pick in its top 3", f"{TEST_TOP3:.1%}", border=True,
               help="With four agents locked in, on the second half of 2025: 1,032 line-ups it "
                    f"had never seen. It named the pick first {TEST_TOP1:.1%} of the time.")
     st.metric("On a new season, top 3", f"{NEW_SEASON_TOP3:.1%}", border=True,
-              help="On 2026 — a new season, with new agents and an off-season in between. "
+              help="On 2026, a new season with new agents and an off-season in between. "
                    "Each week scored using only earlier games. 1,772 line-ups.")
     st.metric("Naive rule, top 3", f"{NAIVE_TOP3:.1%} / {NEW_SEASON_NAIVE_TOP3:.1%}", border=True,
-              help="Suggesting the most-played agents on this map lately — on the rest of 2025, "
-                   "then on 2026.")
+              help="Suggesting the most-played agents on this map lately. Scored on the rest of "
+                   "2025, then on 2026.")
     st.metric("Random guess, top 3", "≈13%", border=True)
 
 st.caption(

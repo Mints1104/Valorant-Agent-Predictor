@@ -142,7 +142,7 @@ with st.container(border=True):
                   delta=f"{(chance - 0.5) * 100:.1f} points above a coin flip",
                   delta_color="off", delta_arrow="off", border=True)
 
-    st.progress(chance_a, text=f"{team_a} {chance_a:.0%} — {1 - chance_a:.0%} {team_b}")
+    st.progress(chance_a, text=f"{team_a} {chance_a:.0%}, {team_b} {1 - chance_a:.0%}")
 
     if abs(chance_a - 0.5) < 0.03:
         st.info("Too close to call. The model is barely off a coin flip here.",
@@ -203,7 +203,7 @@ with st.container(horizontal=True):
         delta_color="off",
         delta_arrow="off",
         border=True,
-        help=f"{TEST_AGENT_ACCURACY:.1%} on unseen maps — below the picker rule's "
+        help=f"{TEST_AGENT_ACCURACY:.1%} on unseen maps, below the picker rule's "
              f"{TEST_PICKER_ACCURACY:.1%}.",
     )
 
