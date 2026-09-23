@@ -258,7 +258,7 @@ A logistic regression turns them into a probability. Fitted on the {len(learn):,
 late June 2025, then scored once on the {len(maps) - len(learn):,} after: {TEST_FORM_ACCURACY:.1%}
 against {TEST_PICKER_ACCURACY:.1%} for guessing whoever picked the map.
 
-**Why so few inputs?** Everything else made it worse: adding the 27 agent columns dropped it
+**Why so few inputs?** Nothing else I tried helped: adding the 27 agent columns dropped it
 from {DEV_FORM_ACCURACY:.1%} to about 55% in development.
 
 **It can't see** roster changes, opponent strength, or anything else about the match.
