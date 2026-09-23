@@ -81,9 +81,9 @@ st.subheader("Biggest movers, first six months against last six", divider="red")
 with st.container(horizontal=True):
     for agent, row in movers.iterrows():
         with st.container(border=True, horizontal=True, vertical_alignment="center", gap="small",
-                          width=180, key=f"glass_mover_{agent}"):
+                          width=164, key=f"glass_mover_{agent}"):
             if agent_path(agent):
-                st.image(str(agent_path(agent)), width=48)
+                st.image(str(agent_path(agent)), width=40)
             st.metric(display(agent), f"{row['late']:.0%}", delta=f"{row['delta'] * 100:+.0f} pts",
                       help=f"{row['early']:.0%} of line-ups in the first six months, "
                            f"{row['late']:.0%} in the last six.")
