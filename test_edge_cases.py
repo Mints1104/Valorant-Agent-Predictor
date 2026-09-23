@@ -110,6 +110,10 @@ check("a map that left the pool shows its last line-ups", not at.exception)
 at.multiselect(key="locked").set_value(["jett", "reyna", "neon", "raze"])   # four duelists
 at.run()
 check("a line-up no pro team would play still gets suggestions and no crash", not at.exception)
+at.button[1].click()                                     # the "Icebox with ..." example button
+at.run()
+check("the demo example button fills the map and all four agents",
+      not at.exception and at.selectbox(key="map").value == "Icebox" and len(at.multiselect(key="locked").value) == 4)
 for page in ("app_pages/meta.py", "app_pages/win_predictor.py"):
     at.switch_page(page)
     at.run()

@@ -56,9 +56,8 @@ first_month, last_month = rates["month"].min(), rates["month"].max()
 
 st.title("How the meta moved")
 st.caption(
-    f"How often pro teams played each agent, month by month, {first_month:%B %Y} to "
-    f"{last_month:%B %Y}. A month's rate is the share of that month's pro line-ups that "
-    "included the agent."
+    f"Share of pro line-ups that included each agent, month by month, {first_month:%B %Y} to "
+    f"{last_month:%B %Y}."
 )
 
 # ---------------------------------------------------------------- biggest movers, all maps
@@ -92,8 +91,10 @@ with st.container(horizontal=True):
     chosen_map = st.selectbox("Map", [ALL_MAPS] + maps_by_use, width=220)
     on_map = rates[(rates["map"] == chosen_map) & (rates["lineups"] >= MIN_LINEUPS)]
     by_use = on_map.groupby("agent")["picked"].sum().sort_values(ascending=False).index.tolist()
+    # Open on the story: the biggest movers shown above, where this map has them.
+    story = [a for a in movers.index if a in by_use]
     agents = st.multiselect(
-        "Agents", by_use, default=by_use[:5], max_selections=MAX_AGENTS,
+        "Agents", by_use, default=story or by_use[:5], max_selections=MAX_AGENTS,
         format_func=display, key=f"meta_agents_{chosen_map}",
     )
 
@@ -135,15 +136,12 @@ else:
     )
     st.altair_chart(chart, width="stretch")
     st.caption(
-        f"Months with fewer than {MIN_LINEUPS} pro line-ups on a map are left out, and gaps "
-        "are the weeks between events or when a map was out of the pool. Hover a point for "
-        "the counts behind it."
+        f"Months with fewer than {MIN_LINEUPS} line-ups on a map are left out; lines join across "
+        "the gaps between events. Hover a point for its counts."
     )
 
 st.info(
-    "**Why the recommender counts recent games for more.** The agents pros play shift from "
-    "month to month, and a new agent can go from nothing to everywhere within weeks. A "
-    "recommender that weighted last year the same as last month would be recommending an "
-    "old meta.",
+    "**Why the recommender counts recent games for more:** a new agent can go from nothing to "
+    "everywhere within weeks.",
     icon=":material/timeline:",
 )

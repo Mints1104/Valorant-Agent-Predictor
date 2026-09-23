@@ -110,18 +110,15 @@ with st.sidebar:
         default="Neither (decider)",
     ) or "Neither (decider)"
 
-    st.caption(
-        "The final map of a match is whatever is left after both sides ban, "
-        "so nobody picks it. That is 18% of maps."
-    )
+    st.caption("The decider is the map left after both sides ban: 18% of maps.")
 
 picked_value = {"Team A": 1, "Team B": -1, "Neither (decider)": 0}[picked_by]
 
 # ---------------------------------------------------------------- the headline
 st.title("Who wins this map?")
 st.caption(
-    "VALORANT Champions Tour 2025. The model sees only what is known before the map "
-    "starts: how the ten players have been performing, and who chose the map."
+    "VCT 2025. The model sees only what's known before the map: how the ten players have been "
+    "playing, and who chose the map."
 )
 
 rating_a = float(teams.loc[team_a, "rating"])
@@ -143,7 +140,7 @@ with st.container(border=True):
         st.metric(team_b, f"{1 - chance_a:.1%}", border=True)
         st.metric("Leaning towards", favourite,
                   delta=f"{(chance - 0.5) * 100:.1f} points above a coin flip",
-                  delta_color="off", border=True)
+                  delta_color="off", delta_arrow="off", border=True)
 
     st.progress(chance_a, text=f"{team_a} {chance_a:.0%} — {1 - chance_a:.0%} {team_b}")
 
@@ -165,10 +162,8 @@ for column, team in [(left, team_a), (right, team_b)]:
 
 # ---------------------------------------------------------------- the agent demo
 st.header("Now change the agents", divider="red")
-st.markdown(
-    "The project's main finding is that **agent picks do not predict the winner**. "
-    "Pick any five agents for each side and watch what happens to the two numbers below."
-)
+st.markdown("**Agent picks don't predict the winner.** Change either line-up and watch the two "
+            "numbers below.")
 
 agent_left, agent_right = st.columns(2)
 with agent_left:
@@ -196,6 +191,7 @@ with st.container(horizontal=True):
         f"{chance_a:.1%}",
         delta="ignores agents entirely",
         delta_color="off",
+        delta_arrow="off",
         border=True,
         help=f"{TEST_FORM_ACCURACY:.1%} on unseen maps, against {TEST_PICKER_ACCURACY:.1%} "
              "for guessing whoever picked the map.",
@@ -205,16 +201,15 @@ with st.container(horizontal=True):
         f"{agent_chance:.1%}",
         delta="moves as you change agents",
         delta_color="off",
+        delta_arrow="off",
         border=True,
         help=f"{TEST_AGENT_ACCURACY:.1%} on unseen maps — below the picker rule's "
              f"{TEST_PICKER_ACCURACY:.1%}.",
     )
 
 st.caption(
-    "The second number moves. That does not make it useful — on maps it had never seen it "
-    f"scored {TEST_AGENT_ACCURACY:.1%}, below the {TEST_PICKER_ACCURACY:.1%} you get by simply "
-    "guessing whoever picked the map. It is reacting to patterns that do not survive into the "
-    "next part of the season."
+    f"The agent model moves, but on unseen maps it scored {TEST_AGENT_ACCURACY:.1%}, below the "
+    f"{TEST_PICKER_ACCURACY:.1%} of guessing whoever picked the map."
 )
 
 # ---------------------------------------------------------------- honesty
@@ -226,58 +221,44 @@ with st.container(horizontal=True):
     st.metric("Guess at random", "50.0%", border=True)
 
 st.caption(
-    f"Scored once on 516 maps it had never seen, with the plan committed before the test ran. "
-    f"During development it scored {DEV_FORM_ACCURACY:.1%} on validation folds — optimistic, "
-    "because settings were chosen after seeing those scores."
+    f"Scored once on 516 unseen maps, with the plan written down first. In development it scored "
+    f"{DEV_FORM_ACCURACY:.1%}, which was optimistic."
 )
 
 st.warning(
-    f"**About {(TEST_FORM_ACCURACY - TEST_PICKER_ACCURACY) * 100:.1f} points better than a "
-    "one-sentence rule on unseen maps — inside the margin of error.** These are the best 50-odd "
-    "teams in the world playing a game with real randomness in it, so matches are close "
-    "to coin flips and no model built on pre-match information is going to change that. "
-    "Treat this as a lean, not a prediction.",
+    f"**{(TEST_FORM_ACCURACY - TEST_PICKER_ACCURACY) * 100:.1f} points better than a one-sentence "
+    "rule on unseen maps: inside the margin of error.** Top teams are close to coin flips, so "
+    "treat this as a lean, not a prediction.",
     icon=":material/warning:",
 )
 
 with st.expander("What the model actually does", icon=":material/help:"):
     st.markdown(
         f"""
-Two numbers go in:
+**Two inputs:**
 
-1. **The difference between the two sides' player ratings**, worked out from every map
-   those ten players had played earlier in the season, with recent maps counting for more
-   (a map {HALF_LIFE} maps ago counts half as much as the last one). Where a side's rating
-   was never recorded — much of the Chinese league early in the season — its combat score
-   is used instead, converted to the same scale.
-2. **Who chose the map** — team A, team B, or nobody.
+- **The players' rating gap**, from every map those ten players had already played that
+  season, a map {HALF_LIFE} maps back counting half. Combat score stands in where rating
+  wasn't recorded (much of China early in the season).
+- **Who chose the map:** team A, team B, or nobody.
 
-A logistic regression turns those into a probability. It was fitted on the
-{len(learn):,} maps played up to late June 2025; the {len(maps) - len(learn):,} maps after
-that were held back and scored once, at the end: {TEST_FORM_ACCURACY:.1%} against
-{TEST_PICKER_ACCURACY:.1%} for guessing whoever picked the map — ahead, but within the
-margin of error.
+A logistic regression turns them into a probability. Fitted on the {len(learn):,} maps up to
+late June 2025, then scored once on the {len(maps) - len(learn):,} after: {TEST_FORM_ACCURACY:.1%}
+against {TEST_PICKER_ACCURACY:.1%} for guessing whoever picked the map.
 
-**Why so few inputs?** Everything else tried made it worse. In development, adding the 27
-agent columns dropped it from {DEV_FORM_ACCURACY:.1%} to about 55%. With only {len(learn):,} maps to learn
-from, any column that does not carry its own weight actively costs accuracy.
+**Why so few inputs?** Everything else made it worse: adding the 27 agent columns dropped it
+from {DEV_FORM_ACCURACY:.1%} to about 55% in development.
 
-**What it cannot see:** roster changes mid-season, who the opponent was when a rating was
-earned, or anything at all about the match beyond these two numbers.
+**It can't see** roster changes, opponent strength, or anything else about the match.
         """
     )
 
 with st.expander("Where the numbers come from", icon=":material/database:"):
     st.markdown(
         f"""
-{len(maps):,} maps from the VCT 2025 season, via two Kaggle datasets. The team ratings
-shown here use the whole season, since a live prediction would be for a match played
-*after* all of it. The model itself was trained only on the first half, developed on
-folds inside that half, and then scored once on the second.
-
-Ratings are missing for Chinese matches early in the season. The model uses combat score
-wherever a side's rating is unknown, but the ratings in this table still rest on fewer
-maps for teams from that region than their map counts suggest.
+{len(maps):,} maps from VCT 2025. The ratings below use the whole season, since a live
+prediction is for a match after it; the model itself was trained on the first half only.
+Chinese teams' ratings rest on fewer maps, because rating was often not recorded there.
         """
     )
     st.dataframe(

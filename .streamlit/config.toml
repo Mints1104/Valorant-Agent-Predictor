@@ -7,3 +7,7 @@ font = "sans-serif"
 
 [server]
 headless = true
+
+[client]
+# Hides the Deploy button and developer menu for the demo; keeps the viewer menu.
+toolbarMode = "viewer"

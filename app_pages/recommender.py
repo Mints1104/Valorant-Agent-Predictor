@@ -60,7 +60,7 @@ def load_lineups():
     return lineup_table(maps), lineup_records(maps)
 
 
-@st.cache_resource(show_spinner="Training the recommender on every line-up (about a minute, once)…")
+@st.cache_resource(show_spinner="Training the recommender on every line-up (about half a minute, once)…")
 def fit_recommender(_lineups: pd.DataFrame, as_of: pd.Timestamp):
     return Classifier(
         HALF_LIFE_DAYS, estimator=HistGradientBoostingClassifier(random_state=0)
@@ -77,17 +77,32 @@ map_names = sorted(lineups["map"].unique())
 default_map = recent["map"].value_counts().idxmax()
 all_agents = model.agents
 
+# One-click examples for the demo, so nothing has to be typed live. A callback runs before
+# the widgets are drawn, which is when their values may be set.
+EXAMPLES = {
+    "Lotus, nothing locked": ("Lotus", []),
+    "Icebox with Viper, Sova, Killjoy, Jett": ("Icebox", ["viper", "sova", "killjoy", "jett"]),
+}
+
+
+def load_example(map_name: str, agents: list[str]) -> None:
+    st.session_state["map"] = map_name
+    st.session_state["locked"] = agents
+
+
+if "map" not in st.session_state:
+    st.session_state["map"] = default_map
+
 # ---------------------------------------------------------------- the controls
 st.title("What would the pros pick?")
 st.caption(
-    "What would a professional team pick next? Trained on every VCT line-up from "
-    f"February 2024 to {data_ends:%B %Y}, with recent games counting for more — so it "
-    f"reflects the meta as of {data_ends:%B %Y}. It was tested separately on the 2026 season."
+    f"Trained on pro line-ups from February 2024 to {data_ends:%B %Y}, recent games counting "
+    "more. Tested separately on 2026."
 )
 
 with st.container(border=True):
     with st.container(horizontal=True):
-        chosen_map = st.selectbox("Map", map_names, index=map_names.index(default_map), width=220)
+        chosen_map = st.selectbox("Map", map_names, width=220, key="map")
         locked = st.multiselect(
             "Agents already locked in",
             all_agents,
@@ -96,6 +111,11 @@ with st.container(border=True):
             placeholder="Choose up to four",
             key="locked",
         )
+    with st.container(horizontal=True, vertical_alignment="center"):
+        st.caption("Examples:", width="content")
+        for label, (example_map, agents) in EXAMPLES.items():
+            st.button(label, on_click=load_example, args=(example_map, agents),
+                      icon=":material/play_arrow:", type="tertiary")
 
 # ---------------------------------------------------------------- nothing locked: just the facts
 # With nothing locked in, the recommender is at its weakest -- both notebooks found that
@@ -141,27 +161,22 @@ if not locked:
                      "it was played."),
         },
     )
-    st.caption(
-        "Real line-ups that pro teams ran, so they always fit together. Records reflect the "
-        "teams that ran them as much as the agents."
-    )
+    st.caption("Real line-ups pro teams ran. Records reflect the teams as much as the agents.")
 
     st.subheader("Most-played agents", divider="red")
     st.dataframe(
         pd.DataFrame({
             "Agent": [display(a) for a in counts.index],
-            "Share of line-ups": (counts / len(lately)).values,
+            "Share of line-ups": (counts / len(lately) * 100).values,
             "Line-ups": [f"{n} of {len(lately)}" for n in counts.values],
         }).head(8),
         hide_index=True,
         column_config={"Share of line-ups": st.column_config.ProgressColumn(
-            format="percent", min_value=0.0, max_value=1.0)},
+            format="%.0f%%", min_value=0.0, max_value=100.0)},
     )
     st.info(
-        "**Lock in an agent to get recommendations.** The recommender's strength is completing "
-        f"a line-up: with four agents locked in it had the pros' pick in its top three "
-        f"{TEST_TOP3:.0%} of the time. From the map alone, simply listing what's most played "
-        "does as well as anything tested.",
+        "**Lock in an agent to get recommendations.** From the map alone, this most-played list "
+        "is as good as anything tested.",
         icon=":material/lock:",
     )
 
@@ -186,7 +201,7 @@ if locked:
 
     suggestions = pd.DataFrame({
         "Agent": [display(a) for a in top.index],
-        "Recommender's preference": top.values,
+        "Recommender's preference": top.values * 100,
         "Recent pro line-ups that ran it": [recent_share(a) for a in top.index],
     })
     st.dataframe(
@@ -194,7 +209,7 @@ if locked:
         hide_index=True,
         column_config={
             "Recommender's preference": st.column_config.ProgressColumn(
-                format="percent", min_value=0.0, max_value=1.0,
+                format="%.0f%%", min_value=0.0, max_value=100.0,
                 help="How strongly the recommender prefers each agent over the others still "
                      "available. A share of its preference, not a chance of winning.",
             ),
@@ -206,30 +221,25 @@ if locked:
     )
 
     st.caption(
-        f"The counts treat every game in the last {EVIDENCE_WINDOW_DAYS} days equally. The "
-        f"recommender counts recent weeks for more (a game {HALF_LIFE_DAYS} days old counts half), "
-        "so when two counts are close the recommender can rank them the other way round."
+        f"Counts weigh all {EVIDENCE_WINDOW_DAYS} days equally; the recommender favours recent "
+        f"weeks (a game {HALF_LIFE_DAYS} days old counts half), so close counts can swap order."
     )
 
-    # greedy completion from what is locked in, for the full picture
-    completion = list(locked)
-    while len(completion) < 5:
-        next_scores = model.scores(chosen_map, completion).drop(completion, errors="ignore")
-        completion.append(next_scores.idxmax())
-    st.caption(
-        "Completing the line-up one pick at a time gives: **"
-        + ", ".join(display(a) for a in completion) + "**"
-    )
+    # greedy completion from what is locked in; with four locked it would repeat the top pick
+    if len(locked) < 4:
+        completion = list(locked)
+        while len(completion) < 5:
+            next_scores = model.scores(chosen_map, completion).drop(completion, errors="ignore")
+            completion.append(next_scores.idxmax())
+        st.caption("Completing the line-up one pick at a time: **"
+                   + ", ".join(display(a) for a in completion) + "**")
     ours, naive = PARTIAL_LOCK[len(locked)]
     lead = (ours - naive) * 100
     st.caption(
-        f"With {len(locked)} agent{'s' if len(locked) > 1 else ''} locked in, the recommender "
-        f"filled in {ours:.0%} of the rest of the line-up with agents the pros actually played, "
-        f"against {naive:.0%} for simply listing the most-played agents — "
-        + (f"only just ahead ({lead:+.1f} points)" if lead < 3 else f"{lead:.0f} points better")
-        + ". The more you lock in, the bigger its lead. Measured on development data (notebook 16)."
-        + (f" With one agent left, that counts its first suggestion only; the pros' pick was in "
-           f"its top three {TEST_TOP3:.0%} of the time on the test." if len(locked) == 4 else "")
+        f"With {len(locked)} locked in, it fills in the rest "
+        + (f"only just better than the most-played rule, by {lead:.1f} points" if lead < 3
+           else f"{lead:.0f} points better than the most-played rule")
+        + " (development data). The more you lock in, the bigger its lead."
     )
 
     # ---------------------------------------------------------------- why: the games behind it
@@ -253,16 +263,15 @@ if locked:
         )
     else:
         st.markdown(
-            f"No pro line-up on **{chosen_map}** in the last {EVIDENCE_WINDOW_DAYS} days of data "
-            f"included all of {locked_text}. The suggestion leans on line-ups that share some of "
-            "them, and on older games."
+            f"No pro line-up on **{chosen_map}** in the last {EVIDENCE_WINDOW_DAYS} days had all of "
+            f"{locked_text}; the suggestion comes from partial matches and older games."
         )
 
     games = games_with(records, chosen_map, list(locked) + [explain])
     if games.empty:
         st.info(
-            f"No pro team has played {display(explain)} with exactly these agents on {chosen_map} "
-            "in 2024 or 2025. The recommender is generalising from similar line-ups.",
+            f"No pro team ran {display(explain)} with exactly these agents on {chosen_map} in "
+            "2024–25; the suggestion comes from similar line-ups.",
             icon=":material/info:",
         )
     else:
@@ -280,9 +289,8 @@ if locked:
         most = ", ".join(f"{team} ({n})" for team, n in teams.head(4).items())
         st.caption(f"Played most by: {most}.")
         st.warning(
-            "**Records reflect the teams as much as the agents.** A line-up played mostly by one "
-            "strong team will look strong because of the team. This project found that agent "
-            "picks do not predict who wins — so read this as what the pros play, not what wins.",
+            "**Records reflect the teams as much as the agents.** Read them as what pros play, "
+            "not what wins.",
             icon=":material/balance:",
         )
 
@@ -317,8 +325,6 @@ with st.container(horizontal=True):
     st.metric("Random guess, top 3", "≈13%", border=True)
 
 st.caption(
-    "Measured week by week, using only games played before each week — once on the second "
-    "half of 2025 and once on 2026, with each plan committed before its test ran. Its "
-    "blind spots are brand-new agents and maps, which it only learns as pros play them. It "
-    "measures how well it matches what pros pick, not whether those picks win."
+    "Scored week by week on games it hadn't seen, each test written down before it ran. Blind "
+    "spots: brand-new agents and maps. It measures matching the pros, not winning."
 )
