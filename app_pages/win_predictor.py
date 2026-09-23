@@ -127,8 +127,8 @@ map_background(chosen_map)
 # ---------------------------------------------------------------- the headline
 st.title("Who wins this map?")
 st.caption(
-    "VCT 2025. The model sees only what's known before the map: how the ten players have been "
-    "playing, and who chose the map."
+    "Pro games from 2025. The model sees only what's known before the map: how the ten players "
+    "have been playing, and who chose the map."
 )
 
 rating_a = float(teams.loc[team_a, "rating"])
@@ -169,6 +169,14 @@ for side, (column, team) in enumerate([(left, team_a), (right, team_b)]):
             st.metric("Combat score", f"{row['acs']:.0f}", border=True)
         st.caption(f"Current roster: {row['players']}")
         st.caption(f"Averaging {row['maps_played']:.0f} games of history per player")
+
+# the middle half of teams, so the two numbers above have a scale
+low, high = teams[["rating", "acs"]].quantile(0.25), teams[["rating", "acs"]].quantile(0.75)
+st.caption("**Player rating** is the stats site vlr.gg's all-round score for how well a player "
+           "played; **combat score** is points per round, mostly for damage and kills.")
+st.caption(f"Both are the roster's average, and higher is better. Most teams sit between "
+           f"{low['rating']:.2f} and {high['rating']:.2f} rating, and {low['acs']:.0f} and "
+           f"{high['acs']:.0f} combat score.")
 
 # ---------------------------------------------------------------- the agent demo
 st.header("Now change the agents", divider="red")
@@ -249,9 +257,10 @@ with st.expander("What the model actually does", icon=":material/help:"):
         f"""
 **Two inputs:**
 
-- **The players' rating gap**, from every game those ten players had already played that
-  season, a game {HALF_LIFE} games back counting half. Combat score stands in where rating
-  wasn't recorded (much of China early in the season).
+- **The players' rating gap** (team A's average rating minus team B's), from every game
+  those ten players had already played that season, a game {HALF_LIFE} games back counting
+  half. Combat score stands in where rating wasn't recorded (much of China early in the
+  season).
 - **Who chose the map:** team A, team B, or nobody.
 
 A logistic regression turns them into a probability. Fitted on the {len(learn):,} games up to
@@ -268,7 +277,7 @@ from {DEV_FORM_ACCURACY:.1%} to about 55% in development.
 with st.expander("Where the numbers come from", icon=":material/database:"):
     st.markdown(
         f"""
-{len(maps):,} games from VCT 2025. The ratings below use the whole season, since a live
+{len(maps):,} pro games from 2025. The ratings below use the whole season, since a live
 prediction is for a match after it; the model itself was trained on the first half only.
 Chinese teams' ratings rest on fewer maps, because rating was often not recorded there.
         """
