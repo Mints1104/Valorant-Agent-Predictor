@@ -112,8 +112,12 @@ streamlit run streamlit_app.py
 ```
 
 The app has three pages: the recommender, with the past pro games behind each suggestion;
-how the meta moved, month by month; and the win predictor. Dataset versions are pinned, so
-after the first download everything runs offline.
+how the meta moved, month by month; and the win predictor. Dataset versions are pinned and
+the agent icons and map backgrounds are stored in `assets/` (fetched once by `fetch_icons.py`), so after
+the first download everything runs offline.
+
+This project was created under Riot Games' "Legal Jibber Jabber" policy using assets owned by
+Riot Games. Riot Games does not endorse or sponsor this project.
 
 ## The notebooks
 

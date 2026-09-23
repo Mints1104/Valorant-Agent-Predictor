@@ -15,13 +15,22 @@ import streamlit as st
 from sklearn.linear_model import LogisticRegression
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from dataset import build_map_table, split_season  # noqa: E402
 from features import agent_list, build_features, feature_columns  # noqa: E402
 from form import current_team_form, player_form  # noqa: E402
 from model import FINAL_COLUMNS, make_final_model  # noqa: E402
+from icons import lineup_html, map_background  # noqa: E402
 
 HALF_LIFE = 5
+
+DISPLAY = {"kayo": "KAY/O"}
+
+
+def display(agent: str) -> str:
+    return DISPLAY.get(agent, agent.capitalize())
+
 
 # On the held-back test half, scored once (notebook 12). These lead.
 TEST_FORM_ACCURACY = 0.545
@@ -113,6 +122,7 @@ with st.sidebar:
     st.caption("The decider is the map left after both sides ban: 18% of maps.")
 
 picked_value = {"Team A": 1, "Team B": -1, "Neither (decider)": 0}[picked_by]
+map_background(chosen_map)
 
 # ---------------------------------------------------------------- the headline
 st.title("Who wins this map?")
@@ -132,7 +142,7 @@ chance_a = predict(fitted["form"], {
 
 favourite, chance = (team_a, chance_a) if chance_a >= 0.5 else (team_b, 1 - chance_a)
 
-with st.container(border=True):
+with st.container(border=True, key="glass_headline"):
     st.subheader(f"{team_a} vs {team_b} on {chosen_map}")
 
     with st.container(horizontal=True):
@@ -150,8 +160,8 @@ with st.container(border=True):
 
 # ---------------------------------------------------------------- team detail
 left, right = st.columns(2)
-for column, team in [(left, team_a), (right, team_b)]:
-    with column, st.container(border=True):
+for side, (column, team) in enumerate([(left, team_a), (right, team_b)]):
+    with column, st.container(border=True, key=f"glass_team_{side}"):
         st.markdown(f"**{team}**")
         row = teams.loc[team]
         with st.container(horizontal=True):
@@ -162,18 +172,20 @@ for column, team in [(left, team_a), (right, team_b)]:
 
 # ---------------------------------------------------------------- the agent demo
 st.header("Now change the agents", divider="red")
-st.markdown("**Agent picks don't predict the winner.** Change either line-up and watch the two "
+st.markdown("**No sign that agent picks predict the winner.** Change either line-up and watch the two "
             "numbers below.")
 
 agent_left, agent_right = st.columns(2)
 with agent_left:
     comp_a = st.multiselect(f"{team_a} line-up", all_agents, max_selections=5,
                             default=list(favourites.get(team_a, all_agents[:5])),
-                            key=f"comp_a_{team_a}")
+                            format_func=display, key=f"comp_a_{team_a}")
+    st.html(lineup_html(comp_a, slots=5 - len(comp_a), size=48, label=display))
 with agent_right:
     comp_b = st.multiselect(f"{team_b} line-up", all_agents, max_selections=5,
                             default=list(favourites.get(team_b, all_agents[5:10])),
-                            key=f"comp_b_{team_b}")
+                            format_func=display, key=f"comp_b_{team_b}")
+    st.html(lineup_html(comp_b, slots=5 - len(comp_b), size=48, label=display))
 
 st.caption("Each side starts on its most-played line-up of the season.")
 

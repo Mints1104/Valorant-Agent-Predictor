@@ -13,9 +13,11 @@ import pandas as pd
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from dataset import build_map_table  # noqa: E402
 from recommend import lineup_table  # noqa: E402
+from icons import agent_path, map_background  # noqa: E402
 
 # Seasons shown. 2026 was added only after the recommender's 2026 test (notebook 15) ran,
 # because its pick rates were that test's answers. Pick rates say nothing about who won,
@@ -78,9 +80,13 @@ movers = pd.concat([change.nlargest(3, "delta"), change.nsmallest(3, "delta")])
 st.subheader("Biggest movers, first six months against last six", divider="red")
 with st.container(horizontal=True):
     for agent, row in movers.iterrows():
-        st.metric(display(agent), f"{row['late']:.0%}", delta=f"{row['delta'] * 100:+.0f} pts",
-                  border=True, help=f"{row['early']:.0%} of line-ups in the first six months, "
-                                    f"{row['late']:.0%} in the last six.")
+        with st.container(border=True, horizontal=True, vertical_alignment="center", gap="small",
+                          width=180, key=f"glass_mover_{agent}"):
+            if agent_path(agent):
+                st.image(str(agent_path(agent)), width=48)
+            st.metric(display(agent), f"{row['late']:.0%}", delta=f"{row['delta'] * 100:+.0f} pts",
+                      help=f"{row['early']:.0%} of line-ups in the first six months, "
+                           f"{row['late']:.0%} in the last six.")
 
 # ---------------------------------------------------------------- the chart
 st.subheader("Pick rate by month", divider="red")
@@ -89,6 +95,7 @@ maps_by_use = (rates[rates["map"] != ALL_MAPS].drop_duplicates(["map", "month"])
                .groupby("map")["lineups"].sum().sort_values(ascending=False).index.tolist())
 with st.container(horizontal=True):
     chosen_map = st.selectbox("Map", [ALL_MAPS] + maps_by_use, width=220)
+    map_background(None if chosen_map == ALL_MAPS else chosen_map)
     on_map = rates[(rates["map"] == chosen_map) & (rates["lineups"] >= MIN_LINEUPS)]
     by_use = on_map.groupby("agent")["picked"].sum().sort_values(ascending=False).index.tolist()
     # Open on the story: the biggest movers shown above, where this map has them.

@@ -97,6 +97,13 @@ raises("a season with no date source says so", lambda: load_match_dates("vct_202
 check("every map has exactly two five-agent line-ups",
       (maps["comp_a"].map(len) == 5).all() and (maps["comp_b"].map(len) == 5).all())
 check("no map is listed twice", not maps.duplicated(["match_id", "map"]).any())
+every = pd.concat([build_map_table(s) for s in ("vct_2024", "vct_2025", "vct_2026")])
+assets = Path(__file__).parent / "assets"
+no_image = sorted({a for comp in list(every["comp_a"]) + list(every["comp_b"]) for a in comp
+                   if not (assets / "agents" / f"{a}.png").exists()}
+                  | {m for m in every["map"].unique() if not (assets / "maps" / "splash" / f"{m}.jpg").exists()})
+check(f"every agent and map from 2024 to 2026 has an image in assets/ (missing: {no_image or 'none'})",
+      not no_image)
 
 print("\n4. The app, with awkward choices")
 from streamlit.testing.v1 import AppTest  # noqa: E402

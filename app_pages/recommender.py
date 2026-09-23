@@ -5,7 +5,7 @@ trained on every line-up in 2024 and 2025, as a recommendation for a match playe
 after the data ends. Each suggestion is shown with the past pro games behind it.
 
 It describes what professional teams pick. It makes no claim that those picks win:
-this project found that agent picks do not predict the winner.
+this project found no sign that agent picks predict the winner.
 """
 
 import sys
@@ -16,9 +16,11 @@ import streamlit as st
 from sklearn.ensemble import HistGradientBoostingClassifier
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from dataset import build_map_table  # noqa: E402
 from recommend import Classifier, games_with, lineup_records, lineup_table  # noqa: E402
+from icons import glass_table, lineup_html, map_background  # noqa: E402
 
 # The headline method and its settings, fixed in notebook 13 and tested in notebook 14.
 HALF_LIFE_DAYS = 45
@@ -100,7 +102,7 @@ st.caption(
     "more. Tested separately on 2026."
 )
 
-with st.container(border=True):
+with st.container(border=True, key="glass_controls"):
     with st.container(horizontal=True):
         chosen_map = st.selectbox("Map", map_names, width=220, key="map")
         locked = st.multiselect(
@@ -111,11 +113,13 @@ with st.container(border=True):
             placeholder="Choose up to four",
             key="locked",
         )
+    st.html(lineup_html(locked, slots=5 - len(locked), label=display))
     with st.container(horizontal=True, vertical_alignment="center"):
         st.caption("Examples:", width="content")
         for label, (example_map, agents) in EXAMPLES.items():
             st.button(label, on_click=load_example, args=(example_map, agents),
                       icon=":material/play_arrow:", type="tertiary")
+map_background(chosen_map)
 
 # ---------------------------------------------------------------- nothing locked: just the facts
 # With nothing locked in, the recommender is at its weakest -- both notebooks found that
@@ -147,33 +151,24 @@ if not locked:
         teams = window[window["agents"] == lineup]["team"].value_counts()
         return ", ".join(f"{team} ({n})" for team, n in teams.head(3).items())
 
-    st.dataframe(
-        pd.DataFrame({
-            "Line-up": [", ".join(display(a) for a in lineup) for lineup in common.index],
-            "Times run": [f"{n} of {len(window)}" for n in common["times"]],
-            "Record": [f"{int(w)}–{int(n - w)}" for w, n in zip(common["wins"], common["times"])],
-            "Played most by": [played_most_by(lineup) for lineup in common.index],
-        }),
-        hide_index=True,
-        column_config={
-            "Times run": st.column_config.TextColumn(
-                help=f"Out of every pro line-up on {chosen_map} in the last {MOST_PLAYED_DAYS} days "
-                     "it was played."),
-        },
-    )
+    st.html(glass_table(
+        [("Line-up", "lineup", None), ("Agents", "text", None),
+         ("Times run", "text", f"Out of every pro line-up on {chosen_map} in the last "
+                               f"{MOST_PLAYED_DAYS} days it was played."),
+         ("Record", "text", None), ("Played most by", "text", None)],
+        [[lineup, ", ".join(display(a) for a in lineup), f"{n} of {len(window)}",
+          f"{int(w)}–{int(n - w)}", played_most_by(lineup)]
+         for lineup, n, w in zip(common.index, common["times"], common["wins"])],
+    ))
     st.caption("Real line-ups pro teams ran. Records reflect the teams too, not just the agents.")
 
     st.subheader("Most-played agents", divider="red")
-    st.dataframe(
-        pd.DataFrame({
-            "Agent": [display(a) for a in counts.index],
-            "Share of line-ups": (counts / len(lately) * 100).values,
-            "Line-ups": [f"{n} of {len(lately)}" for n in counts.values],
-        }).head(8),
-        hide_index=True,
-        column_config={"Share of line-ups": st.column_config.ProgressColumn(
-            format="%.0f%%", min_value=0.0, max_value=100.0)},
-    )
+    st.html(glass_table(
+        [("", "icon", None), ("Agent", "strong", None), ("Share of line-ups", "bar", None),
+         ("Line-ups", "text", None)],
+        [[a, display(a), n / len(lately) * 100, f"{n} of {len(lately)}"]
+         for a, n in counts.head(8).items()],
+    ))
     st.info(
         "**Lock in an agent to get recommendations.** From the map alone, this most-played list "
         "is as good as anything tested.",
@@ -199,26 +194,16 @@ if locked:
 
     st.subheader("Suggested next pick", divider="red")
 
-    suggestions = pd.DataFrame({
-        "Agent": [display(a) for a in top.index],
-        "Recommender's preference": top.values * 100,
-        "Recent pro line-ups that ran it": [recent_share(a) for a in top.index],
-    })
-    st.dataframe(
-        suggestions,
-        hide_index=True,
-        column_config={
-            "Recommender's preference": st.column_config.ProgressColumn(
-                format="%.0f%%", min_value=0.0, max_value=100.0,
-                help="How strongly the recommender prefers each agent over the others still "
-                     "available. A share of its preference, not a chance of winning.",
-            ),
-            "Recent pro line-ups that ran it": st.column_config.TextColumn(
-                help=f"Of the pro line-ups on {chosen_map} in the last {EVIDENCE_WINDOW_DAYS} days "
-                     "of data that had every agent you've locked in, how many also ran this agent.",
-            ),
-        },
-    )
+    st.html(glass_table(
+        [("", "icon", None), ("Agent", "strong", None),
+         ("Recommender's preference", "bar",
+          "How strongly the recommender prefers each agent over the others still available. "
+          "A share of its preference, not a chance of winning."),
+         ("Recent pro line-ups that ran it", "text",
+          f"Of the pro line-ups on {chosen_map} in the last {EVIDENCE_WINDOW_DAYS} days of data that "
+          "had every agent you've locked in, how many also ran this agent.")],
+        [[a, display(a), share * 100, recent_share(a)] for a, share in top.items()],
+    ))
 
     st.caption(
         f"Counts weigh all {EVIDENCE_WINDOW_DAYS} days equally; the recommender favours recent "
@@ -233,14 +218,17 @@ if locked:
             completion.append(next_scores.idxmax())
         st.caption("Completing the line-up one pick at a time: **"
                    + ", ".join(display(a) for a in completion) + "**")
-    ours, naive = PARTIAL_LOCK[len(locked)]
-    lead = (ours - naive) * 100
-    st.caption(
-        f"With {len(locked)} locked in, it fills in the rest "
-        + (f"only just better than the most-played rule, by {lead:.1f} points" if lead < 3
-           else f"{lead:.0f} points better than the most-played rule")
-        + " (development data). The more you lock in, the bigger its lead."
-    )
+        # Only for partial line-ups. With four locked, this "fills in the rest" measure is the
+        # first suggestion alone (development data) and would contradict the tested top-3 lead
+        # shown below, so it is left out.
+        ours, naive = PARTIAL_LOCK[len(locked)]
+        lead = (ours - naive) * 100
+        st.caption(
+            f"With {len(locked)} locked in, it fills in the rest "
+            + (f"only just better than the most-played rule, by {lead:.1f} points" if lead < 3
+               else f"{lead:.0f} points better than the most-played rule")
+            + " (development data). The more you lock in, the bigger its lead."
+        )
 
     # ---------------------------------------------------------------- why: the games behind it
     st.subheader("Why this pick", divider="red")
@@ -295,18 +283,14 @@ if locked:
         )
 
         shown = games.head(GAMES_SHOWN)
-        st.dataframe(
-            pd.DataFrame({
-                "Date": shown["played_at"].dt.date,
-                "Event": shown["event"],
-                "Team": shown["team"],
-                "Opponent": shown["opponent"],
-                "Score": [f"{f}–{a}" for f, a in zip(shown["rounds_for"], shown["rounds_against"])],
-                "Result": ["Won" if w else "Lost" for w in shown["won"]],
-            }),
-            hide_index=True,
-            column_config={"Date": st.column_config.DateColumn(format="D MMM YYYY")},
-        )
+        st.html(glass_table(
+            [("Date", "text", None), ("Event", "text", None), ("Team", "strong", None),
+             ("Opponent", "text", None), ("Score", "text", None), ("Result", "result", None)],
+            [[f"{when:%d %b %Y}".lstrip("0"), event, team, opponent, f"{f}–{a}", won]
+             for when, event, team, opponent, f, a, won in zip(
+                 shown["played_at"], shown["event"], shown["team"], shown["opponent"],
+                 shown["rounds_for"], shown["rounds_against"], shown["won"])],
+        ))
         if len(games) > GAMES_SHOWN:
             st.caption(f"The {GAMES_SHOWN} most recent of {len(games)}.")
 

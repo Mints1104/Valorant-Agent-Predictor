@@ -11,6 +11,8 @@ wins.
 
 import streamlit as st
 
+from app_pages.icons import RIOT_NOTICE
+
 st.set_page_config(
     page_title="VCT agent recommender",
     page_icon=":material/sports_esports:",
@@ -29,3 +31,7 @@ page = st.navigation(
     position="top",
 )
 page.run()
+
+# Riot's fan-content policy asks for this wherever its game images are shown.
+st.divider()
+st.caption(RIOT_NOTICE)
