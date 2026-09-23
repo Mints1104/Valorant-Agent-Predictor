@@ -96,10 +96,10 @@ if "map" not in st.session_state:
     st.session_state["map"] = default_map
 
 # ---------------------------------------------------------------- the controls
-st.title("What would the pros pick?")
+st.title("Meta Data")
 st.caption(
-    f"Trained on pro line-ups from February 2024 to {data_ends:%B %Y}, recent games counting "
-    "more. Tested separately on 2026."
+    f"**What would the pros pick?** Trained on pro line-ups from February 2024 to "
+    f"{data_ends:%B %Y}, recent games counting more. Tested separately on 2026."
 )
 
 with st.container(border=True, key="glass_controls"):

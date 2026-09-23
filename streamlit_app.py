@@ -14,7 +14,7 @@ import streamlit as st
 from app_pages.icons import RIOT_NOTICE
 
 st.set_page_config(
-    page_title="VCT agent recommender",
+    page_title="Meta Data",
     page_icon=":material/sports_esports:",
     layout="wide",
 )

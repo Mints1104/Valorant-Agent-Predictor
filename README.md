@@ -1,6 +1,6 @@
-# What would the pros pick?
+# Meta Data
 
-A data science project on professional VALORANT (VCT) data. Give the recommender a map and
+*What would the pros pick?* A data science project on professional VALORANT (VCT) data. Give the recommender a map and
 the agents a team has locked in, and it suggests what a pro team would pick next. The rest of
 the project asks whether agent picks predict who wins. It finds no sign they do.
 
