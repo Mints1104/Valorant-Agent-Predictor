@@ -170,11 +170,11 @@ for side, (column, team) in enumerate([(left, team_a), (right, team_b)]):
         st.caption(f"Current roster: {row['players']}")
         st.caption(f"Averaging {row['maps_played']:.0f} games of history per player")
 
-# the middle half of teams, so the two numbers above have a scale
-low, high = teams[["rating", "acs"]].quantile(0.25), teams[["rating", "acs"]].quantile(0.75)
+# the middle 80% of teams, so the two numbers above have a scale
+low, high = teams[["rating", "acs"]].quantile(0.1), teams[["rating", "acs"]].quantile(0.9)
 st.caption("**Player rating** is the stats site vlr.gg's all-round score for how well a player "
            "played; **combat score** is points per round, mostly for damage and kills.")
-st.caption(f"Both are the roster's average, and higher is better. Most teams sit between "
+st.caption(f"Both are the roster's average, and higher is better. 8 in 10 teams sit between "
            f"{low['rating']:.2f} and {high['rating']:.2f} rating, and {low['acs']:.0f} and "
            f"{high['acs']:.0f} combat score.")
 
