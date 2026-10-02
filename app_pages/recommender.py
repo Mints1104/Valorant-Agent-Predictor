@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from dataset import build_map_table  # noqa: E402
 from recommend import Classifier, games_with, lineup_records, lineup_table  # noqa: E402
-from icons import glass_table, lineup_html, map_background  # noqa: E402
+from icons import glass_table, lineup_html, map_background, pick_cards  # noqa: E402
 
 # The headline method and its settings, fixed in notebook 13 and tested in notebook 14.
 HALF_LIFE_DAYS = 45
@@ -194,16 +194,17 @@ if locked:
 
     st.subheader("Suggested next pick", divider="red")
 
-    st.html(glass_table(
-        [("", "icon", None), ("Agent", "strong", None),
-         ("Recommender's preference", "bar",
-          "How strongly the recommender prefers each agent over the others still available. "
-          "A share of its preference, not a chance of winning."),
-         ("Recent pro line-ups that ran it", "text",
-          f"Of the pro line-ups on {chosen_map} in the last {EVIDENCE_WINDOW_DAYS} days of data that "
-          "had every agent you've locked in, how many also ran this agent.")],
-        [[a, display(a), share * 100, recent_share(a)] for a, share in top.items()],
-    ))
+    def evidence(agent: str) -> str:
+        share = recent_share(agent)
+        if share == "No recent line-ups":
+            return f"No pro line-ups on {chosen_map} in the last {EVIDENCE_WINDOW_DAYS} days had these agents"
+        return f"{share} recent pro line-ups with your agents ran it"
+
+    st.html(pick_cards([(a, share, evidence(a)) for a, share in top.head(3).items()], locked, label=display))
+    if len(top) > 3:
+        st.caption("Next most likely: " + ", ".join(f"{display(a)} {share:.0%}" for a, share in top.iloc[3:].items()))
+    st.caption("The percentage is how strongly the recommender prefers each agent over the others still "
+               "available: a share of its preference, not a chance of winning.")
 
     st.caption(
         f"Counts weigh all {EVIDENCE_WINDOW_DAYS} days equally; the recommender favours recent "

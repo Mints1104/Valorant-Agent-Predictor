@@ -43,15 +43,15 @@ GLASS_CSS = f"""<style>
 [class*="st-key-glass"] [data-testid="stMetric"] {{ background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }}
 [data-testid="stMainBlockContainer"], [data-testid="stMainBlockContainer"] :is(h1, h2, h3, h4) {{ text-shadow: {SHADOW}; }}
 [data-testid="stMainBlockContainer"] [data-testid="stCaptionContainer"] {{ opacity: 1; color: rgba(236, 232, 225, 0.85); }}
-.glass-table {{ width: 100%; border-collapse: separate; border-spacing: 0; font-size: 15px; color: #ece8e1;
+.glass-table {{ width: 100%; border-collapse: separate; border-spacing: 0; font-size: 1rem; color: #ece8e1;
   {GLASS} border: 1px solid rgba(255, 255, 255, 0.10); border-radius: 12px; overflow: hidden; }}
-.glass-table th {{ text-align: left; font-weight: 600; font-size: 14px; color: #a9b3bd; padding: 10px 14px;
+.glass-table th {{ text-align: left; font-weight: 600; font-size: 0.9rem; color: #a9b3bd; padding: 10px 14px;
   background: rgba(15, 25, 35, 0.55); border-bottom: 1px solid rgba(255, 255, 255, 0.10); white-space: nowrap; }}
-.glass-table th .q {{ font-size: 12px; opacity: 0.7; margin-left: 4px; cursor: help; }}
+.glass-table th .q {{ font-size: 0.75rem; opacity: 0.7; margin-left: 4px; cursor: help; }}
 .glass-table td {{ padding: 6px 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); vertical-align: middle; }}
 .glass-table tr:last-child td {{ border-bottom: none; }}
-.glass-table td.icon img {{ width: 40px; height: 40px; border-radius: 8px; display: block; background: {SLOT}; }}
-.glass-table td.lineup img {{ height: 40px; display: block; }}
+.glass-table td.icon img {{ width: 48px; height: 48px; border-radius: 8px; display: block; background: {SLOT}; }}
+.glass-table td.lineup img {{ height: 48px; display: block; }}
 .glass-table td.strong {{ font-weight: 600; }}
 .glass-table td.won {{ color: #4cd07d; font-weight: 600; }}
 .glass-table td.lost {{ color: {RED}; font-weight: 600; }}
@@ -131,18 +131,22 @@ def lineup_uri(agents: tuple[str, ...], size: int = 64, gap: int = 6) -> str:
     return _uri(strip)
 
 
-def lineup_html(agents, *, slots: int = 0, size: int = 56, label=lambda a: a) -> str:
-    """Icons in a row, followed by empty slots ("?" first). Plain HTML for st.html."""
+def lineup_html(agents, *, slots: int = 0, size: int = 64, label=lambda a: a, pick: str | None = None) -> str:
+    """Icons in a row, followed by empty slots ("?" first). Plain HTML for st.html.
+
+    `pick` adds one more agent after the others, outlined in red: a suggestion shown in place.
+    """
     parts = []
-    box = (f"width:{size}px;height:{size}px;border-radius:8px;flex:none;"
+    box = (f"width:{size}px;height:{size}px;border-radius:8px;flex:none;box-sizing:border-box;"
            f"display:flex;align-items:center;justify-content:center")
-    for agent in agents:
+    for agent in list(agents) + ([pick] if pick else []):
+        ring = f";border:3px solid {RED}" if agent == pick else ""
         uri = agent_uri(agent)
         if uri:
             parts.append(f'<img src="{uri}" alt="{label(agent)}" title="{label(agent)}" '
-                         f'style="{box};background:{SLOT}">')
+                         f'style="{box};background:{SLOT}{ring}">')
         else:
-            parts.append(f'<div style="{box};background:{SLOT};font-size:12px">{label(agent)}</div>')
+            parts.append(f'<div style="{box};background:{SLOT};font-size:12px{ring}">{label(agent)}</div>')
     for i in range(slots):
         colour = RED if i == 0 else "#44505c"
         parts.append(f'<div style="{box};border:2px dashed {colour};color:{colour};'
@@ -150,6 +154,43 @@ def lineup_html(agents, *, slots: int = 0, size: int = 56, label=lambda a: a) ->
                      f'{"?" if i == 0 else ""}</div>')
     return ('<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
             + "".join(parts) + "</div>")
+
+
+PICK_CSS = f"""<style>
+.pick-cards {{ display: flex; gap: 16px; flex-wrap: wrap; }}
+.pick-card {{ flex: 1 1 280px; {GLASS} border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px;
+  padding: 18px 20px; color: #ece8e1; text-shadow: {SHADOW}; }}
+.pick-card.first {{ border: 2px solid {RED}; }}
+.pick-rank {{ font-size: 0.8rem; letter-spacing: 0.12em; color: {RED}; font-weight: 700; }}
+.pick-head {{ display: flex; align-items: center; gap: 16px; margin: 8px 0 12px; }}
+.pick-head img {{ width: 96px; height: 96px; border-radius: 12px; background: {SLOT}; flex: none; }}
+.pick-name {{ font-size: 1.5rem; font-weight: 700; line-height: 1.2; }}
+.pick-pct {{ font-size: 2rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }}
+.pick-bar {{ height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); margin-bottom: 10px; }}
+.pick-bar div {{ height: 8px; border-radius: 4px; background: {RED}; }}
+.pick-evidence {{ font-size: 0.9rem; margin-bottom: 12px; }}
+</style>"""
+
+
+def pick_cards(picks, locked, *, label=lambda a: a) -> str:
+    """The top suggestions as cards for st.html: the agent, its share of the recommender's
+    preference, the evidence behind it, and the line-up it completes with the pick outlined.
+
+    picks: (agent, share from 0 to 1, evidence sentence) per card, best first.
+    """
+    cards = []
+    for rank, (agent, share, evidence) in enumerate(picks, start=1):
+        uri = agent_uri(agent) or ""
+        strip = lineup_html(locked, slots=4 - len(locked), size=44, label=label, pick=agent)
+        cards.append(
+            f'<div class="pick-card{" first" if rank == 1 else ""}">'
+            f'<div class="pick-rank">#{rank}</div>'
+            f'<div class="pick-head"><img src="{uri}" alt="{html.escape(label(agent))}">'
+            f'<div><div class="pick-name">{html.escape(label(agent))}</div>'
+            f'<div class="pick-pct">{share:.0%}</div></div></div>'
+            f'<div class="pick-bar"><div style="width:{share * 100:.1f}%"></div></div>'
+            f'<div class="pick-evidence">{html.escape(evidence)}</div>{strip}</div>')
+    return PICK_CSS + '<div class="pick-cards">' + "".join(cards) + "</div>"
 
 
 def glass_table(columns, rows) -> str:

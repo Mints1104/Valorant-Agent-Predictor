@@ -4,6 +4,8 @@ backgroundColor = "#0f1923"
 secondaryBackgroundColor = "#1b2733"
 textColor = "#ece8e1"
 font = "sans-serif"
+# Up from the default 16 px so the app reads from the back of a room.
+baseFontSize = 18
 
 [server]
 headless = true

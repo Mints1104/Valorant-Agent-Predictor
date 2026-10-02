@@ -7,7 +7,7 @@ they do.
 
 [Slides (PDF)](presentation/Meta_Data.pdf) · built with Python, pandas, scikit-learn and Streamlit
 
-![The recommender suggesting a fifth agent on Icebox, with the pro games behind the pick](docs/screenshots/3_why_this_pick.png)
+![The recommender suggesting a fifth agent on Icebox, each pick shown in the line-up it completes](docs/screenshots/3_suggestions.png)
 
 ## The recommender
 
