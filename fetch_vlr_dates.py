@@ -6,7 +6,7 @@ reads them from vlr.gg directly, the same way those datasets were built.
 
 It keeps **only the match ID, date, start time and event name** of each match.
 vlr.gg's match lists also show scores; this script never reads them, so it cannot
-leak a sealed season's results (2026's win results are sealed -- see CLAUDE.md).
+leak a sealed season's results (2026's win results are kept unopened for a future test).
 
 **Time zones.** vlr.gg shows times in the visitor's own zone -- UK time, from here --
 while the Kaggle date sources for 2024 and 2025 are in Indian time (UTC+5:30). Checked on

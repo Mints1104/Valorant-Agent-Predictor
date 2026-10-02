@@ -1,8 +1,13 @@
 # Meta Data
 
-*What would the pros pick?* A data science project on professional VALORANT (VCT) data. Give the recommender a map and
-the agents a team has locked in, and it suggests what a pro team would pick next. The rest of
-the project asks whether agent picks predict who wins. It finds no sign they do.
+*What would the pros pick?* A data science project on professional VALORANT (VCT) data. Give
+the recommender a map and the agents a team has locked in, and it suggests what a pro team would
+pick next. The rest of the project asks whether agent picks predict who wins. It finds no sign
+they do.
+
+[Slides (PDF)](presentation/Meta_Data.pdf) · built with Python, pandas, scikit-learn and Streamlit
+
+![The recommender suggesting a fifth agent on Icebox, with the pro games behind the pick](docs/screenshots/3_why_this_pick.png)
 
 ## The recommender
 
@@ -105,7 +110,7 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 python -m ipykernel install --user --name valorant-capstone   # the kernel the notebooks use
-python test_data_pull.py    # downloads the three datasets; needs a Kaggle token (data/README.md)
+python test_data_pull.py    # downloads the three public datasets; no Kaggle account needed
 python test_form.py         # proves player form only looks backwards
 python test_edge_cases.py   # feeds the pipeline awkward inputs; each must be handled
 streamlit run streamlit_app.py
@@ -139,9 +144,9 @@ Riot Games. Riot Games does not endorse or sponsor this project.
 | 15 | Recommender, tested once on 2026 |
 | 16 | Recommender with one to three agents locked in |
 
-Code is in `src/`, the app in `streamlit_app.py` and `app_pages/`, the deck in
-`presentation/`, with screenshots of the demo in `presentation/demo_fallback/`.
-[`progress/START_HERE.md`](progress/START_HERE.md) is a one-page cheat sheet.
+Code is in `src/`, the app in `streamlit_app.py` and `app_pages/`, the slides in
+`presentation/` (PowerPoint, with a PDF copy), and screenshots of every app page in
+`docs/screenshots/`.
 
 ## Similar projects
 

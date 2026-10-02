@@ -3,13 +3,10 @@
 Nothing here is committed. The raw files download through `kagglehub` and are cached on your
 machine. The versions are pinned, so after the first download everything works offline.
 
-## Sign in to Kaggle (once)
+## Downloading
 
-Create a token at [kaggle.com/settings/api](https://www.kaggle.com/settings/api) ("Generate
-New Token") and save it, on its own, in `~/.kaggle/access_token` (on Windows,
-`C:\Users\<you>\.kaggle\access_token`). A `.env` file or a `KAGGLE_API_KEY` variable does
-nothing; the variable kagglehub reads is `KAGGLE_API_TOKEN`. Then run
-`python test_data_pull.py` to check the downloads work.
+All three datasets are public, so no Kaggle account or token is needed. Run
+`python test_data_pull.py` to download them (about 31 MB) and check they load.
 
 ## The datasets
 
@@ -19,8 +16,7 @@ nothing; the variable kagglehub reads is `KAGGLE_API_TOKEN`. Then run
 | [`piyush86kumar/valorant-vct-2025-all-events`](https://www.kaggle.com/datasets/piyush86kumar/valorant-vct-2025-all-events) | 1 | 2025 match dates |
 | [`piyush86kumar/valorant-champions-tour-2024-all-events`](https://www.kaggle.com/datasets/piyush86kumar/valorant-champions-tour-2024-all-events) | 3 | 2024 match dates |
 
-What each file in the main dataset holds: [`VCT_2025_DATA_SUMMARY.md`](VCT_2025_DATA_SUMMARY.md).
-Which ones the project uses, and why: [`data_sources.md`](data_sources.md).
+Which files the project uses, and why: [`data_sources.md`](data_sources.md).
 
 ## Match dates
 
@@ -44,5 +40,5 @@ order. Every source was scraped from vlr.gg, so they share match IDs, and
 
 ## Column reference
 
-[`columns_description.csv`](../columns_description.csv) is the dataset's own field dictionary.
-A few column names differ slightly from the files, so check the headers.
+The main dataset's Kaggle page describes every file and column. A few column names differ
+slightly from the files, so check the headers.
