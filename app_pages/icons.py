@@ -197,7 +197,7 @@ def glass_table(columns, rows) -> str:
     """An HTML table for st.html that sits on the map background.
 
     columns: (header, kind, help) with kind one of "icon" (an agent), "lineup" (a tuple of agents),
-    "bar" (a 0-100 share), "text", "strong", or "result" (True for won); help may be None.
+    "bar" (a 0-100 share), "text", "strong", or "result" (True for won, None if not shown); help may be None.
     rows: one list of values per row, in column order.
     """
     head = "".join(
@@ -215,6 +215,8 @@ def glass_table(columns, rows) -> str:
             elif kind == "bar":
                 cells.append(f'<td><div class="bar"><div style="width:{max(float(value), 1):.1f}%"></div></div>'
                              f'<span class="pct">{float(value):.0f}%</span></td>')
+            elif kind == "result" and value is None:
+                cells.append("<td>—</td>")
             elif kind == "result":
                 cells.append(f'<td class="{"won" if value else "lost"}">{"Won" if value else "Lost"}</td>')
             else:

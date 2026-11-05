@@ -189,6 +189,18 @@ def rank_of(scores: pd.Series, locked, target: str) -> float:
     return float(better_or_level)
 
 
+def pool_picks(scores: pd.Series, locked, pool=()) -> pd.Series:
+    """The agents still open, best first, as shares of the preference among them.
+
+    A non-empty `pool` keeps only those agents: "of the agents I can play, which fits
+    best?" Empty when every agent in the pool is already locked in.
+    """
+    still_open = scores.drop(list(locked), errors="ignore")
+    if len(pool):
+        still_open = still_open[still_open.index.isin(pool)]
+    return (still_open / still_open.sum()).sort_values(ascending=False)
+
+
 def build_from_scratch(model, map_name: str) -> list[str]:
     """A whole line-up from the map alone, one pick at a time."""
     picked: list[str] = []
@@ -253,6 +265,17 @@ def lineup_records(maps: pd.DataFrame) -> pd.DataFrame:
     )
     out = pd.concat([a_side, b_side], ignore_index=True)
     return out.sort_values(["played_at", "match_id"], ascending=False).reset_index(drop=True)
+
+
+def hide_results(records: pd.DataFrame, from_date: pd.Timestamp) -> pd.DataFrame:
+    """Blank who won, and the score, for every game on or after `from_date`.
+
+    The line-ups stay, so a season can be learned from and counted while its results
+    remain unopened for a future win-model test.
+    """
+    out = records.astype({"won": "boolean", "rounds_for": "Int64", "rounds_against": "Int64"})
+    out.loc[out["played_at"] >= from_date, ["won", "rounds_for", "rounds_against"]] = pd.NA
+    return out
 
 
 def games_with(records: pd.DataFrame, map_name: str, agents) -> pd.DataFrame:

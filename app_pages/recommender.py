@@ -1,7 +1,7 @@
 """The pro-pick recommender: pick a map, lock in agents, see what the pros would pick next.
 
 Uses the headline method from notebook 13 -- gradient boosting, half-life 45 days --
-trained on every line-up in 2024 and 2025, as a recommendation for a match played
+trained on every line-up since 2024, as a recommendation for a match played
 after the data ends. Each suggestion is shown with the past pro games behind it.
 
 It describes what professional teams pick. It makes no claim that those picks win:
@@ -19,11 +19,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from dataset import build_map_table  # noqa: E402
-from recommend import Classifier, games_with, lineup_records, lineup_table  # noqa: E402
+from recommend import Classifier, games_with, hide_results, lineup_records, lineup_table, pool_picks  # noqa: E402
 from icons import glass_table, lineup_html, map_background, pick_cards  # noqa: E402
 
 # The headline method and its settings, fixed in notebook 13 and tested in notebook 14.
 HALF_LIFE_DAYS = 45
+
+# Every season the live recommender learns from. Notebooks 14 and 15 tested the method week by
+# week on the rest of 2025 and on 2026; the app then learns from all of it, as it would in use.
+SEASONS = ["vct_2024", "vct_2025", "vct_2026"]
+
+# 2026's win results are still unopened (see README), so the app shows that season's line-ups
+# but not who won. The recommender never sees results either way. True opens them.
+SHOW_2026_RESULTS = False
+RESULTS_HIDDEN_FROM = pd.Timestamp("2026-01-01")
 
 # From notebook 14, on the 2025 test half's 1,032 line-ups.
 TEST_TOP3 = 0.913
@@ -56,10 +65,18 @@ def display(agent: str) -> str:
     return DISPLAY.get(agent, agent.capitalize())
 
 
-@st.cache_data(ttl="12h", show_spinner="Loading every pro line-up from 2024 and 2025…")
+def record_text(wins: int, known: int) -> str:
+    """A win-loss record out of the games whose result can be shown."""
+    return f"{int(wins)}–{int(known - wins)}" if known else "—"
+
+
+@st.cache_data(ttl="12h", show_spinner="Loading every pro line-up since 2024…")
 def load_lineups():
-    maps = pd.concat([build_map_table("vct_2024"), build_map_table()], ignore_index=True)
-    return lineup_table(maps), lineup_records(maps)
+    maps = pd.concat([build_map_table(season) for season in SEASONS], ignore_index=True)
+    records = lineup_records(maps)
+    if not SHOW_2026_RESULTS:
+        records = hide_results(records, RESULTS_HIDDEN_FROM)
+    return lineup_table(maps), records
 
 
 @st.cache_resource(show_spinner="Training the recommender on every line-up (about half a minute, once)…")
@@ -83,7 +100,7 @@ all_agents = model.agents
 # the widgets are drawn, which is when their values may be set.
 EXAMPLES = {
     "Lotus, nothing locked": ("Lotus", []),
-    "Icebox with Viper, Sova, Killjoy, Jett": ("Icebox", ["viper", "sova", "killjoy", "jett"]),
+    "Breeze with Viper, Sova, Harbor, Jett": ("Breeze", ["viper", "sova", "harbor", "jett"]),
 }
 
 
@@ -99,7 +116,7 @@ if "map" not in st.session_state:
 st.title("Meta Data")
 st.caption(
     f"**What would the pros pick?** Trained on pro line-ups from February 2024 to "
-    f"{data_ends:%B %Y}, recent games counting more. Tested separately on 2026."
+    f"{data_ends:%B %Y}, the newest data available, recent games counting more."
 )
 
 with st.container(border=True, key="glass_controls"):
@@ -112,6 +129,14 @@ with st.container(border=True, key="glass_controls"):
             format_func=display,
             placeholder="Choose up to four",
             key="locked",
+        )
+        mine = st.multiselect(
+            "Agents I can play",
+            all_agents,
+            format_func=display,
+            placeholder="Any agent",
+            help="Leave empty to see every agent. Otherwise suggestions come only from these.",
+            key="mine",
         )
     st.html(lineup_html(locked, slots=5 - len(locked), label=display))
     with st.container(horizontal=True, vertical_alignment="center"):
@@ -138,7 +163,8 @@ if not locked:
     window = records[(records["map"] == chosen_map)
                      & (records["played_at"] >= last_played - pd.Timedelta(days=MOST_PLAYED_DAYS))]
     common = (window.groupby("agents")
-              .agg(times=("won", "size"), wins=("won", "sum"), latest=("played_at", "max"))
+              .agg(times=("won", "size"), wins=("won", "sum"), known=("won", "count"),
+                   latest=("played_at", "max"))
               .sort_values(["times", "latest"], ascending=False)
               .head(COMMON_SHOWN))
 
@@ -155,20 +181,25 @@ if not locked:
         [("Line-up", "lineup", None), ("Agents", "text", None),
          ("Times run", "text", f"Out of every pro line-up on {chosen_map} in the last "
                                f"{MOST_PLAYED_DAYS} days it was played."),
-         ("Record", "text", None), ("Played most by", "text", None)],
+         ("Record", "text", None if SHOW_2026_RESULTS else "2026 results aren't shown."),
+         ("Played most by", "text", None)],
         [[lineup, ", ".join(display(a) for a in lineup), f"{n} of {len(window)}",
-          f"{int(w)}–{int(n - w)}", played_most_by(lineup)]
-         for lineup, n, w in zip(common.index, common["times"], common["wins"])],
+          record_text(w, k), played_most_by(lineup)]
+         for lineup, n, w, k in zip(common.index, common["times"], common["wins"], common["known"])],
     ))
     st.caption("Real line-ups pro teams ran. Records reflect the teams too, not just the agents.")
 
-    st.subheader("Most-played agents", divider="red")
-    st.html(glass_table(
-        [("", "icon", None), ("Agent", "strong", None), ("Share of line-ups", "bar", None),
-         ("Line-ups", "text", None)],
-        [[a, display(a), n / len(lately) * 100, f"{n} of {len(lately)}"]
-         for a, n in counts.head(8).items()],
-    ))
+    st.subheader("Most-played of your agents" if mine else "Most-played agents", divider="red")
+    listed = counts[counts.index.isin(mine)] if mine else counts
+    if listed.empty:
+        st.caption(f"Pros didn't play any of your agents on {chosen_map} lately.")
+    else:
+        st.html(glass_table(
+            [("", "icon", None), ("Agent", "strong", None), ("Share of line-ups", "bar", None),
+             ("Line-ups", "text", None)],
+            [[a, display(a), n / len(lately) * 100, f"{n} of {len(lately)}"]
+             for a, n in listed.head(8).items()],
+        ))
     st.info(
         "**Lock in an agent to get recommendations.** From the map alone, this most-played list "
         "is as good as anything tested.",
@@ -177,8 +208,14 @@ if not locked:
 
 # ---------------------------------------------------------------- the suggestions
 if locked:
-    scores = model.scores(chosen_map, locked).drop(locked, errors="ignore")
-    preference = (scores / scores.sum()).sort_values(ascending=False)
+    scores = model.scores(chosen_map, locked)
+    overall = pool_picks(scores, locked)
+    preference = pool_picks(scores, locked, mine)
+    filtering = not preference.empty and bool(mine)
+    if preference.empty:     # every agent they can play is already locked in
+        st.info("All your agents are already locked in, so this shows every agent.",
+                icon=":material/info:")
+        preference = overall
     top = preference.head(SHOWN)
 
     window_start = as_of - pd.Timedelta(days=EVIDENCE_WINDOW_DAYS)
@@ -192,7 +229,7 @@ if locked:
         ran_it = with_locked["agents"].map(lambda lineup: agent in lineup).sum()
         return f"{ran_it} of {len(with_locked)}"
 
-    st.subheader("Suggested next pick", divider="red")
+    st.subheader("Best fit from your agents" if filtering else "Suggested next pick", divider="red")
 
     def evidence(agent: str) -> str:
         share = recent_share(agent)
@@ -205,6 +242,12 @@ if locked:
         st.caption("Next most likely: " + ", ".join(f"{display(a)} {share:.0%}" for a, share in top.iloc[3:].items()))
     st.caption("The percentage is how strongly the recommender prefers each agent over the others still "
                "available: a share of its preference, not a chance of winning.")
+    if filtering:
+        if overall.index[0] != top.index[0]:
+            st.caption(f"Across every agent, its first choice is {display(overall.index[0])}, "
+                       "which isn't on your list.")
+        st.caption("Accuracy was only tested across every agent, so the figures on this page "
+                   "don't cover a shortened list.")
 
     st.caption(
         f"Counts weigh all {EVIDENCE_WINDOW_DAYS} days equally; the recommender favours recent "
@@ -213,7 +256,7 @@ if locked:
 
     # greedy completion from what is locked in; with four locked it would repeat the top pick
     if len(locked) < 4:
-        completion = list(locked)
+        completion = list(locked) + ([top.index[0]] if filtering else [])
         while len(completion) < 5:
             next_scores = model.scores(chosen_map, completion).drop(completion, errors="ignore")
             completion.append(next_scores.idxmax())
@@ -259,20 +302,22 @@ if locked:
     games = games_with(records, chosen_map, list(locked) + [explain])
     if games.empty:
         st.info(
-            f"No pro team ran {display(explain)} with exactly these agents on {chosen_map} in "
-            "2024–25; the suggestion comes from similar line-ups.",
+            f"No pro team ran {display(explain)} with exactly these agents on {chosen_map} "
+            "since 2024; the suggestion comes from similar line-ups.",
             icon=":material/info:",
         )
     else:
-        wins, losses = int(games["won"].sum()), int((~games["won"]).sum())
+        wins, known = int(games["won"].sum()), int(games["won"].count())
         teams = games["team"].value_counts()
 
         with st.container(horizontal=True):
             label = "Pro games with this line-up" if len(locked) == 4 else "Pro games with these agents"
-            st.metric(f"{label}, 2024–25", f"{len(games)}", border=True,
-                      help=f"Every pro game in 2024 and 2025, not only the last "
+            st.metric(f"{label}, since 2024", f"{len(games)}", border=True,
+                      help=f"Every pro game since 2024, not only the last "
                            f"{EVIDENCE_WINDOW_DAYS} days counted in the sentence above.")
-            st.metric("Their record", f"{wins}–{losses}", border=True)
+            st.metric("Their record", record_text(wins, known), border=True,
+                      help=None if SHOW_2026_RESULTS else
+                      f"From the {known} of these games played before 2026. 2026 results aren't shown.")
             st.metric("Different teams", f"{len(teams)}", border=True)
 
         most = ", ".join(f"{team} ({n})" for team, n in teams.head(4).items())
@@ -287,7 +332,8 @@ if locked:
         st.html(glass_table(
             [("Date", "text", None), ("Event", "text", None), ("Team", "strong", None),
              ("Opponent", "text", None), ("Score", "text", None), ("Result", "result", None)],
-            [[f"{when:%d %b %Y}".lstrip("0"), event, team, opponent, f"{f}–{a}", won]
+            [[f"{when:%d %b %Y}".lstrip("0"), event, team, opponent,
+              "—" if pd.isna(won) else f"{f}–{a}", None if pd.isna(won) else won]
              for when, event, team, opponent, f, a, won in zip(
                  shown["played_at"], shown["event"], shown["team"], shown["opponent"],
                  shown["rounds_for"], shown["rounds_against"], shown["won"])],

@@ -1,0 +1,10 @@
+# Everything else: the notebooks, and fetch_icons.py / fetch_vlr_dates.py.
+-r requirements.txt
+scipy==1.18.1
+matplotlib==3.11.2
+seaborn==0.13.2
+jupyter==1.1.1
+ipykernel==7.3.0
+shap==0.52.0
+requests==2.34.2
+beautifulsoup4==4.15.0

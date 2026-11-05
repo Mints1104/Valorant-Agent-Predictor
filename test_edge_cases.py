@@ -19,7 +19,9 @@ from dates import load_match_dates  # noqa: E402
 from features import build_features, feature_columns  # noqa: E402
 from form import player_form  # noqa: E402
 from model import FINAL_COLUMNS, evaluate, make_final_model  # noqa: E402
-from recommend import Classifier, CoOccurrence, Popularity, lineup_table, rank_of  # noqa: E402
+from recommend import (  # noqa: E402
+    Classifier, CoOccurrence, Popularity, hide_results, lineup_records, lineup_table, pool_picks, rank_of,
+)
 
 
 def check(label, condition):
@@ -60,6 +62,13 @@ check("an agent it has never seen counts as a miss, never a hit",
       rank_of(scores, ["omen", "fade", "raze", "viper"], "brand_new_agent") == np.inf)
 check("a tie counts against the recommender",
       rank_of(pd.Series({"a": 1.0, "b": 1.0, "c": 0.5}), [], "a") == 2)
+picks = pool_picks(pd.Series({"a": 0.5, "b": 0.3, "c": 0.2}), ["a"], ["a", "c"])
+check("an agent pool keeps only those agents, minus the locked ones", list(picks.index) == ["c"])
+check("preference shares within a pool still add up to 100%", abs(picks.sum() - 1) < 1e-9)
+check("no pool means every agent still open",
+      list(pool_picks(pd.Series({"a": 0.5, "b": 0.3, "c": 0.2}), ["a"]).index) == ["b", "c"])
+check("a pool that is all locked in comes back empty, not with a crash",
+      pool_picks(pd.Series({"a": 0.5, "b": 0.5}), ["a"], ["a"]).empty)
 empty = lineups.iloc[:0]
 check("counting methods cope with no history at all (empty ranking, no crash)",
       len(CoOccurrence(21).fit(empty, as_of).scores("Lotus", ["omen"])) == 0)
@@ -105,22 +114,44 @@ no_image = sorted({a for comp in list(every["comp_a"]) + list(every["comp_b"]) f
 check(f"every agent and map from 2024 to 2026 has an image in assets/ (missing: {no_image or 'none'})",
       not no_image)
 
+season_2026 = build_map_table("vct_2026")
+cut = season_2026["played_at"].min()
+hidden = hide_results(lineup_records(pd.concat([maps, season_2026], ignore_index=True)), cut)
+unopened = hidden[hidden["played_at"] >= cut]
+check("hidden results leave no winner or score, and keep every line-up",
+      unopened[["won", "rounds_for", "rounds_against"]].isna().all().all()
+      and len(unopened) == 2 * len(season_2026))
+check("earlier results stay visible", hidden[hidden["played_at"] < cut]["won"].notna().all())
+
 print("\n4. The app, with awkward choices")
 from streamlit.testing.v1 import AppTest  # noqa: E402
 
 at = AppTest.from_file(str(Path(__file__).parent / "streamlit_app.py"), default_timeout=900)
 at.run()
-at.selectbox[0].set_value("Breeze")                      # left the pool after 2024
+at.selectbox[0].set_value("Icebox")                      # left the pool before 2026
 at.multiselect(key="locked").set_value([])
 at.run()
 check("a map that left the pool shows its last line-ups", not at.exception)
 at.multiselect(key="locked").set_value(["jett", "reyna", "neon", "raze"])   # four duelists
 at.run()
 check("a line-up no pro team would play still gets suggestions and no crash", not at.exception)
-at.button[1].click()                                     # the "Icebox with ..." example button
+at.multiselect(key="mine").set_value(["sage", "omen"])
+at.run()
+check("suggestions come only from the agents you can play",
+      not at.exception and "Best fit from your agents" in [s.value for s in at.subheader])
+at.multiselect(key="mine").set_value(["jett"])           # already locked in
+at.run()
+check("if all your agents are locked in, it says so and shows everyone",
+      not at.exception and any("already locked in" in i.value for i in at.info))
+at.multiselect(key="locked").set_value([])
+at.multiselect(key="mine").set_value(["miks"])           # barely played, and not on this old map
+at.run()
+check("nothing locked, with agents the pros didn't play here, doesn't crash", not at.exception)
+at.multiselect(key="mine").set_value([])
+at.button[1].click()                                     # the "Breeze with ..." example button
 at.run()
 check("the demo example button fills the map and all four agents",
-      not at.exception and at.selectbox(key="map").value == "Icebox" and len(at.multiselect(key="locked").value) == 4)
+      not at.exception and at.selectbox(key="map").value == "Breeze" and len(at.multiselect(key="locked").value) == 4)
 for page in ("app_pages/meta.py", "app_pages/win_predictor.py"):
     at.switch_page(page)
     at.run()

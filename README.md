@@ -5,9 +5,13 @@ the recommender a map and the agents a team has locked in, and it suggests what 
 pick next. The rest of the project asks whether agent picks predict who wins. It finds no sign
 they do.
 
-[Slides (PDF)](presentation/Meta_Data.pdf) · built with Python, pandas, scikit-learn and Streamlit
+[![Tests](https://github.com/Mints1104/Valorant-Agent-Predictor/actions/workflows/tests.yml/badge.svg)](https://github.com/Mints1104/Valorant-Agent-Predictor/actions/workflows/tests.yml)
 
-![The recommender suggesting a fifth agent on Icebox, each pick shown in the line-up it completes](docs/screenshots/3_suggestions.png)
+**[Try the live app](https://valorant-agent-predictor.streamlit.app/)** (if it has gone to sleep,
+one click wakes it) · [Slides (PDF)](presentation/Meta_Data.pdf) · built with Python, pandas,
+scikit-learn and Streamlit
+
+![The recommender suggesting a fifth agent on Breeze, each pick shown in the line-up it completes](docs/screenshots/3_suggestions.png)
 
 ## The recommender
 
@@ -31,6 +35,9 @@ With four agents locked in, how often the pros' actual fifth pick is in its top 
   count. Simple co-occurrence comes within about a point on every test, so most of the gain
   comes from using the locked agents, not the model type.
 - It predicts what pros pick, not what wins.
+
+Tell the app which agents you can play and it picks the best fit from those. The numbers above
+were measured across every agent, so they don't cover a shortened list.
 
 ## Does picking right win?
 
@@ -73,8 +80,10 @@ With four agents locked in, how often the pros' actual fifth pick is in its top 
 | vlr.gg, read by [`fetch_vlr_dates.py`](fetch_vlr_dates.py) | 2026 match dates (504 of 504 matched on 2025) |
 
 2024 and 2025 (2,376 maps) are for learning, 2026 (886 maps) for testing. 2021–2023 have no
-dates, so they're left out. 2026's win results are still sealed, kept for a future test of
-the win model.
+dates, so they're left out. Once the tests had run, the live app was retrained on all three
+seasons, so it now includes 2026's line-ups. 2026's win results are still sealed, kept for a
+future test of the win model: the app shows who played what in 2026, but not who won
+(`SHOW_2026_RESULTS` in `app_pages/recommender.py`).
 
 Problems found and fixed (in `src/dataset.py`):
 
@@ -92,7 +101,9 @@ Problems found and fixed (in `src/dataset.py`):
 - It imitates the pros. Nothing here shows its picks win more.
 - Win–loss records in the app reflect the teams too, and the two can't be separated.
 - "No synergy" isn't proof there is none. One season is too small to see a 5-point effect.
-- The app's recommender is trained on games up to October 2025.
+- The app's recommender is trained on games up to Masters London (June 2026), the newest in
+  the dataset. The pros played Miks in only two line-ups in that data, so the app knows Miks
+  but will rarely suggest them.
 
 ## If it went live
 
@@ -108,7 +119,7 @@ Problems found and fixed (in `src/dataset.py`):
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt   # or requirements.txt for just the app and tests
 python -m ipykernel install --user --name valorant-capstone   # the kernel the notebooks use
 python test_data_pull.py    # downloads the three public datasets; no Kaggle account needed
 python test_form.py         # proves player form only looks backwards
@@ -116,13 +127,17 @@ python test_edge_cases.py   # feeds the pipeline awkward inputs; each must be ha
 streamlit run streamlit_app.py
 ```
 
-The app has three pages: the recommender, with the past pro games behind each suggestion;
+The app has three pages: the recommender, with the past pro games behind each suggestion and
+an optional list of the agents you can play;
 how the meta moved, month by month; and the win predictor. Dataset versions are pinned and
 the agent icons and map backgrounds are stored in `assets/` (fetched once by `fetch_icons.py`), so after
 the first download everything runs offline.
 
 This project was created under Riot Games' "Legal Jibber Jabber" policy using assets owned by
 Riot Games. Riot Games does not endorse or sponsor this project.
+
+The code is under the [MIT licence](LICENSE). That covers this project's own code only, not
+Riot's images in `assets/` or the datasets.
 
 ## The notebooks
 
