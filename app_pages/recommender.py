@@ -14,6 +14,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 from sklearn.ensemble import HistGradientBoostingClassifier
+from threadpoolctl import threadpool_limits
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -81,9 +82,12 @@ def load_lineups():
 
 @st.cache_resource(show_spinner="Training the recommender on every line-up (about half a minute, once)…")
 def fit_recommender(_lineups: pd.DataFrame, as_of: pd.Timestamp):
-    return Classifier(
-        HALF_LIFE_DAYS, estimator=HistGradientBoostingClassifier(random_state=0)
-    ).fit(_lineups, as_of)
+    # One thread: a small hosted container can report far more cores than it may use, and
+    # gradient boosting's threads then wait on each other. Alone it takes about 6 seconds.
+    with threadpool_limits(limits=1):
+        return Classifier(
+            HALF_LIFE_DAYS, estimator=HistGradientBoostingClassifier(random_state=0)
+        ).fit(_lineups, as_of)
 
 
 lineups, records = load_lineups()
