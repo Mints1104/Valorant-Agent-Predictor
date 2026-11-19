@@ -20,8 +20,7 @@ from recommend import lineup_table  # noqa: E402
 from icons import agent_path, map_background  # noqa: E402
 
 # Seasons shown. 2026 was added only after the recommender's 2026 test (notebook 15) ran,
-# because its pick rates were that test's answers. Pick rates say nothing about who won,
-# so showing them does not touch the win models' still-sealed 2026 test.
+# because its pick rates were that test's answers.
 SEASONS = ["vct_2024", "vct_2025", "vct_2026"]
 
 # A month on one map needs this many line-ups before its pick rate is shown at all.

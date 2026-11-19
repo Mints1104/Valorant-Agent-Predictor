@@ -81,9 +81,9 @@ were measured across every agent, so they don't cover a shortened list.
 
 2024 and 2025 (2,376 maps) are for learning, 2026 (886 maps) for testing. 2021–2023 have no
 dates, so they're left out. Once the tests had run, the live app was retrained on all three
-seasons, so it now includes 2026's line-ups. 2026's win results are still sealed, kept for a
-future test of the win model: the app shows who played what in 2026, but not who won
-(`SHOW_2026_RESULTS` in `app_pages/recommender.py`).
+seasons, so it now includes 2026's line-ups. 2026's win results were held back for a test of
+the win model. That test was dropped, so the app now shows them too (`SHOW_2026_RESULTS` in
+`app_pages/recommender.py`). The win model has therefore never been tested on 2026.
 
 Problems found and fixed (in `src/dataset.py`):
 
@@ -128,8 +128,10 @@ streamlit run streamlit_app.py
 ```
 
 The app has three pages: the recommender, with the past pro games behind each suggestion and
-an optional list of the agents you can play;
-how the meta moved, month by month; and the win predictor. Dataset versions are pinned and
+an optional list of the agents you can play, and a warning if the line-up lacks a role pros
+nearly always run (every pro line-up since 2024 had a controller); how the meta moved, month
+by month; and "Do agents matter?", a win predictor that shows agent picks don't predict the
+winner. Dataset versions are pinned and
 the agent icons and map backgrounds are stored in `assets/` (fetched once by `fetch_icons.py`), so after
 the first download everything runs offline.
 

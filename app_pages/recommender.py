@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from dataset import build_map_table  # noqa: E402
 from recommend import Classifier, games_with, hide_results, lineup_records, lineup_table, pool_picks  # noqa: E402
+from roles import missing_roles, role, role_counts  # noqa: E402
 from icons import glass_table, lineup_html, map_background, pick_cards  # noqa: E402
 
 # The headline method and its settings, fixed in notebook 13 and tested in notebook 14.
@@ -30,9 +31,9 @@ HALF_LIFE_DAYS = 45
 # week on the rest of 2025 and on 2026; the app then learns from all of it, as it would in use.
 SEASONS = ["vct_2024", "vct_2025", "vct_2026"]
 
-# 2026's win results are still unopened (see README), so the app shows that season's line-ups
-# but not who won. The recommender never sees results either way. True opens them.
-SHOW_2026_RESULTS = False
+# 2026's win results were held back for a win-model test that was later dropped, so they're
+# now shown. The recommender never sees results either way. False hides them again.
+SHOW_2026_RESULTS = True
 RESULTS_HIDDEN_FROM = pd.Timestamp("2026-01-01")
 
 # From notebook 14, on the 2025 test half's 1,032 line-ups.
@@ -64,6 +65,22 @@ DISPLAY = {"kayo": "KAY/O"}
 
 def display(agent: str) -> str:
     return DISPLAY.get(agent, agent.capitalize())
+
+
+def roles_text(agents) -> str:
+    """'Controller, Initiator, 2 Duelists': the roles these agents fill."""
+    return ", ".join(r if n == 1 else f"{n} {r}s" for r, n in role_counts(agents).items())
+
+
+def role_warning(agents, lineups: pd.DataFrame) -> None:
+    """Warn if a full line-up lacks a role pros nearly always run, with how rarely they skip it."""
+    for missing, skipped in missing_roles(agents, lineups):
+        how_rare = "None" if skipped == 0 else f"Only {skipped:,}"
+        st.warning(
+            f"**This line-up has no {missing.lower()}.** {how_rare} of the {len(lineups):,} pro "
+            f"line-ups since 2024 went without one.",
+            icon=":material/group_off:",
+        )
 
 
 def record_text(wins: int, known: int) -> str:
@@ -143,6 +160,8 @@ with st.container(border=True, key="glass_controls"):
             key="mine",
         )
     st.html(lineup_html(locked, slots=5 - len(locked), label=display))
+    if locked and roles_text(locked):
+        st.caption(f"Roles locked in: {roles_text(locked)}.")
     with st.container(horizontal=True, vertical_alignment="center"):
         st.caption("Examples:", width="content")
         for label, (example_map, agents) in EXAMPLES.items():
@@ -241,7 +260,8 @@ if locked:
             return f"No pro line-ups on {chosen_map} in the last {EVIDENCE_WINDOW_DAYS} days had these agents"
         return f"{share} recent pro line-ups with your agents ran it"
 
-    st.html(pick_cards([(a, share, evidence(a)) for a, share in top.head(3).items()], locked, label=display))
+    st.html(pick_cards([(a, share, evidence(a)) for a, share in top.head(3).items()], locked,
+                       label=display, role=role))
     if len(top) > 3:
         st.caption("Next most likely: " + ", ".join(f"{display(a)} {share:.0%}" for a, share in top.iloc[3:].items()))
     st.caption("The percentage is how strongly the recommender prefers each agent over the others still "
@@ -277,6 +297,10 @@ if locked:
                else f"{lead:.0f} points better than the most-played rule")
             + " (development data). The more you lock in, the bigger its lead."
         )
+
+    # The role check: game knowledge, not the model. It looks at the line-up the suggestion
+    # completes -- the top pick with four locked in, the one-at-a-time completion otherwise.
+    role_warning(list(locked) + [top.index[0]] if len(locked) == 4 else completion, lineups)
 
     # ---------------------------------------------------------------- why: the games behind it
     st.subheader("Why this pick", divider="red")

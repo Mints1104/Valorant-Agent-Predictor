@@ -271,7 +271,7 @@ def hide_results(records: pd.DataFrame, from_date: pd.Timestamp) -> pd.DataFrame
     """Blank who won, and the score, for every game on or after `from_date`.
 
     The line-ups stay, so a season can be learned from and counted while its results
-    remain unopened for a future win-model test.
+    stay hidden (`SHOW_2026_RESULTS` in the app turns this on or off).
     """
     out = records.astype({"won": "boolean", "rounds_for": "Int64", "rounds_against": "Int64"})
     out.loc[out["played_at"] >= from_date, ["won", "rounds_for", "rounds_against"]] = pd.NA

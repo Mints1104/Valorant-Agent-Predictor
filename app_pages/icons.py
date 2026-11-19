@@ -165,6 +165,7 @@ PICK_CSS = f"""<style>
 .pick-head {{ display: flex; align-items: center; gap: 16px; margin: 8px 0 12px; }}
 .pick-head img {{ width: 96px; height: 96px; border-radius: 12px; background: {SLOT}; flex: none; }}
 .pick-name {{ font-size: 1.5rem; font-weight: 700; line-height: 1.2; }}
+.pick-role {{ font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; }}
 .pick-pct {{ font-size: 2rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }}
 .pick-bar {{ height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.12); margin-bottom: 10px; }}
 .pick-bar div {{ height: 8px; border-radius: 4px; background: {RED}; }}
@@ -172,9 +173,10 @@ PICK_CSS = f"""<style>
 </style>"""
 
 
-def pick_cards(picks, locked, *, label=lambda a: a) -> str:
-    """The top suggestions as cards for st.html: the agent, its share of the recommender's
-    preference, the evidence behind it, and the line-up it completes with the pick outlined.
+def pick_cards(picks, locked, *, label=lambda a: a, role=lambda a: None) -> str:
+    """The top suggestions as cards for st.html: the agent, its role, its share of the
+    recommender's preference, the evidence behind it, and the line-up it completes with the
+    pick outlined.
 
     picks: (agent, share from 0 to 1, evidence sentence) per card, best first.
     """
@@ -182,11 +184,13 @@ def pick_cards(picks, locked, *, label=lambda a: a) -> str:
     for rank, (agent, share, evidence) in enumerate(picks, start=1):
         uri = agent_uri(agent) or ""
         strip = lineup_html(locked, slots=4 - len(locked), size=44, label=label, pick=agent)
+        kind = role(agent)
         cards.append(
             f'<div class="pick-card{" first" if rank == 1 else ""}">'
             f'<div class="pick-rank">#{rank}</div>'
             f'<div class="pick-head"><img src="{uri}" alt="{html.escape(label(agent))}">'
             f'<div><div class="pick-name">{html.escape(label(agent))}</div>'
+            + (f'<div class="pick-role">{html.escape(kind)}</div>' if kind else "") +
             f'<div class="pick-pct">{share:.0%}</div></div></div>'
             f'<div class="pick-bar"><div style="width:{share * 100:.1f}%"></div></div>'
             f'<div class="pick-evidence">{html.escape(evidence)}</div>{strip}</div>')

@@ -19,6 +19,7 @@ from dates import load_match_dates  # noqa: E402
 from features import build_features, feature_columns  # noqa: E402
 from form import player_form  # noqa: E402
 from model import FINAL_COLUMNS, evaluate, make_final_model  # noqa: E402
+from roles import ROLE, missing_roles, role_counts  # noqa: E402
 from recommend import (  # noqa: E402
     Classifier, CoOccurrence, Popularity, hide_results, lineup_records, lineup_table, pool_picks, rank_of,
 )
@@ -123,6 +124,18 @@ check("hidden results leave no winner or score, and keep every line-up",
       and len(unopened) == 2 * len(season_2026))
 check("earlier results stay visible", hidden[hidden["played_at"] < cut]["won"].notna().all())
 
+every_lineup = lineup_table(pd.concat([maps, season_2026], ignore_index=True))
+unknown = {a for lineup in every_lineup["agents"] for a in lineup} - set(ROLE)
+check(f"every agent in the data has a role (missing: {unknown or 'none'})", not unknown)
+check("roles are counted, with two of a kind shown as two",
+      dict(role_counts(["jett", "raze", "omen", "sova", "killjoy"]))
+      == {"Controller": 1, "Initiator": 1, "Sentinel": 1, "Duelist": 2})
+check("a line-up with no controller is flagged; a missing sentinel isn't",
+      [r for r, _ in missing_roles(["jett", "raze", "neon", "sova", "fade"], every_lineup)] == ["Controller"]
+      and missing_roles(["jett", "raze", "omen", "sova", "fade"], every_lineup) == [])
+check("an agent with no known role turns the check off rather than guess",
+      missing_roles(["jett", "raze", "neon", "sova", "newagent"], every_lineup) == [])
+
 print("\n4. The app, with awkward choices")
 from streamlit.testing.v1 import AppTest  # noqa: E402
 
@@ -152,12 +165,22 @@ at.button[1].click()                                     # the "Breeze with ..."
 at.run()
 check("the demo example button fills the map and all four agents",
       not at.exception and at.selectbox(key="map").value == "Breeze" and len(at.multiselect(key="locked").value) == 4)
-for page in ("app_pages/meta.py", "app_pages/win_predictor.py"):
+check("a line-up with a controller gets no role warning",
+      not any("has no" in w.value for w in at.warning))
+at.multiselect(key="locked").set_value(["jett", "raze", "sova", "killjoy"])
+at.multiselect(key="mine").set_value(["neon"])           # only a duelist left to choose
+at.run()
+check("finishing it with no controller warns, and the cards name each pick's role",
+      not at.exception and any("has no controller" in w.value for w in at.warning)
+      and any("pick-role" in h.value for h in at.get("html")))
+at.multiselect(key="mine").set_value([])
+at.run()
+for page in ("app_pages/meta.py", "app_pages/do_agents_matter.py"):
     at.switch_page(page)
     at.run()
     check(f"{page} loads", not at.exception)
 at.multiselect[0].set_value([])                          # team A picks no agents at all
 at.run()
-check("win predictor: an empty line-up doesn't crash it", not at.exception)
+check("do agents matter: an empty line-up doesn't crash it", not at.exception)
 
 print("\nAll edge cases handled.")

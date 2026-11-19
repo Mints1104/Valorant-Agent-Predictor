@@ -1,5 +1,5 @@
-"""The win predictor -- the project's supporting work, moved here unchanged from the old
-single-page app when the agent recommender became the headline.
+"""Do agents matter? The project's supporting work: the win predictor, framed around the
+question it actually answers. It began as the old single-page app's win predictor.
 
 Two models are loaded side by side on purpose. One uses how the ten players have been
 performing; the other uses the agents each side picked. Changing the agents moves the
@@ -125,10 +125,16 @@ picked_value = {"Team A": 1, "Team B": -1, "Neither (decider)": 0}[picked_by]
 map_background(chosen_map)
 
 # ---------------------------------------------------------------- the headline
-st.title("Who wins this map?")
+st.title("Do agents matter?")
+st.markdown(
+    "**Not for who wins, as far as this project could find.** Below, two models predict the same "
+    "pro match. One knows how the ten players have been playing; the other knows only the agents "
+    "each side picked. Change the agents and see which one moves, and which one was right more "
+    "often on games it hadn't seen."
+)
 st.caption(
-    "Pro games from 2025. The model sees only what's known before the map: how the ten players "
-    "have been playing, and who chose the map."
+    "Pro games from 2025. Both models see only what's known before the map, including who "
+    "chose it."
 )
 
 rating_a = float(teams.loc[team_a, "rating"])
@@ -143,7 +149,7 @@ chance_a = predict(fitted["form"], {
 favourite, chance = (team_a, chance_a) if chance_a >= 0.5 else (team_b, 1 - chance_a)
 
 with st.container(border=True, key="glass_headline"):
-    st.subheader(f"{team_a} vs {team_b} on {chosen_map}")
+    st.subheader(f"Who wins? {team_a} vs {team_b} on {chosen_map}")
 
     with st.container(horizontal=True):
         st.metric(team_a, f"{chance_a:.1%}", border=True)

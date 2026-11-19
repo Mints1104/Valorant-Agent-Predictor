@@ -4,9 +4,9 @@
 
 Three pages. The agent recommender is the headline: pick a map, lock in agents, and see
 what professional teams would pick next, with the past games behind each suggestion.
-"How the meta moved" charts which agents pros played, month by month. The win
-predictor is the supporting work, and shows live that agent picks do not predict who
-wins.
+"How the meta moved" charts which agents pros played, month by month. "Do agents
+matter?" is the supporting work: a win predictor that shows live that agent picks do not
+predict who wins.
 """
 
 import streamlit as st
@@ -25,8 +25,8 @@ page = st.navigation(
                 icon=":material/recommend:", default=True),
         st.Page("app_pages/meta.py", title="How the meta moved",
                 icon=":material/timeline:"),
-        st.Page("app_pages/win_predictor.py", title="Win predictor",
-                icon=":material/scoreboard:"),
+        st.Page("app_pages/do_agents_matter.py", title="Do agents matter?",
+                icon=":material/science:"),
     ],
     position="top",
 )
