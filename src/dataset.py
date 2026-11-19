@@ -14,6 +14,9 @@ results rather than being tidying-up:
   4. Five exhibition matches (all-star games and the like) are removed.
 """
 
+import ast
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import kagglehub
@@ -156,6 +159,34 @@ def build_map_table(season: str = SEASON) -> pd.DataFrame:
         .sort_values(["played_at", "match_id", "game_id"])
         .reset_index(drop=True)
     )
+
+
+# Maps played after the Kaggle dataset ends (Stage 2 and Champions 2026), read from vlr.gg by
+# fetch_vlr_matches.py in the same columns. Checked first on three events Kaggle has: all 296
+# maps matched on every column. Only the app uses them; the notebooks' tests stay on Kaggle.
+VLR_MAPS = Path(__file__).resolve().parent.parent / "data" / "vlr_maps_vct_2026_late.csv"
+
+
+def load_vlr_maps(path: Path = VLR_MAPS) -> pd.DataFrame:
+    """The maps fetch_vlr_matches.py saved, in build_map_table's columns."""
+    maps = pd.read_csv(path, parse_dates=["played_at"])
+    for column in ("comp_a", "comp_b"):
+        maps[column] = maps[column].map(ast.literal_eval)
+    return maps[list(OUTPUT_COLUMNS.values())]
+
+
+def live_map_table(seasons: list[str]) -> pd.DataFrame:
+    """Every map in these Kaggle seasons, plus the newer ones from vlr.gg: what the app shows.
+
+    A map in both is taken from Kaggle. Not for the notebooks, whose tests were run on the
+    Kaggle data alone.
+    """
+    kaggle = pd.concat([build_map_table(season) for season in seasons], ignore_index=True)
+    newer = load_vlr_maps()
+    newer = newer[~newer["game_id"].isin(kaggle["game_id"])]
+    return (pd.concat([kaggle, newer], ignore_index=True)
+            .sort_values(["played_at", "match_id", "game_id"])
+            .reset_index(drop=True))
 
 
 def split_season(maps: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:

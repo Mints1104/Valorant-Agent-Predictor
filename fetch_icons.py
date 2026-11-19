@@ -17,7 +17,7 @@ ROOT = pathlib.Path(__file__).parent / "assets"
 AGENT_DIR, MAP_DIR, SPLASH_DIR = ROOT / "agents", ROOT / "maps", ROOT / "maps" / "splash"
 for folder in (AGENT_DIR, MAP_DIR, SPLASH_DIR):
     folder.mkdir(parents=True, exist_ok=True)
-OUR_MAPS = {"Abyss", "Ascent", "Bind", "Breeze", "Corrode", "Fracture", "Haven", "Icebox", "Lotus", "Pearl", "Split", "Sunset"}
+OUR_MAPS = {"Abyss", "Ascent", "Bind", "Breeze", "Corrode", "Fracture", "Haven", "Icebox", "Lotus", "Pearl", "Split", "Summit", "Sunset"}
 
 session = requests.Session()
 agents = session.get("https://valorant-api.com/v1/agents", params={"isPlayableCharacter": "true"}, timeout=30).json()["data"]

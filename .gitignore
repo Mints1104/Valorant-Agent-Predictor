@@ -21,3 +21,6 @@ kaggle.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Pages saved by fetch_vlr_matches.py, so it never re-asks vlr.gg
+/data/vlr_pages/

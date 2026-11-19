@@ -1,6 +1,6 @@
 # The data
 
-Nothing here is committed. The raw files download through `kagglehub` and are cached on your
+The raw files download through `kagglehub` and are cached on your
 machine. The versions are pinned, so after the first download everything works offline.
 
 ## Downloading
@@ -37,6 +37,26 @@ order. Every source was scraped from vlr.gg, so they share match IDs, and
 - **The vlr.gg script was checked on 2025 first.** It matched the Kaggle dates on all 504
   matches once vlr.gg's UK times were converted to the Kaggle source's Indian time. It stores
   match IDs and dates only, never scores.
+
+## Matches after the Kaggle data
+
+The Kaggle data ends at Masters London (21 June 2026). `vlr_maps_vct_2026_late.csv` holds the
+702 maps played after it, in Stage 2 (all four leagues) and Champions 2026, read from vlr.gg
+match pages by [`fetch_vlr_matches.py`](../fetch_vlr_matches.py) in the same columns as
+`build_map_table`, plus the patch. Only the app reads it (`live_map_table` in
+`src/dataset.py`); the notebooks' tests stay on Kaggle.
+
+- **Checked against Kaggle first**, on Masters London and China and EMEA Stage 1: all 296
+  maps matched on every column.
+- **Team names come from each map's header**, which uses Kaggle's short names ("Bilibili
+  Gaming", not the sponsor name at the top of the page). The one exception, JD Gaming, is
+  mapped to Kaggle's "JDG Esports".
+- **14 teams are new to 2026's data.** They're Challengers teams from the Stage 2 Play-Ins,
+  not misspellings.
+- **A match page's `data-utc-ts` is US Eastern time, not UTC.** It's converted to Indian time,
+  like every other date in the project.
+- The pages are saved in `vlr_pages/` (not committed), so re-running it reads them again
+  instead of asking vlr.gg.
 
 ## Column reference
 

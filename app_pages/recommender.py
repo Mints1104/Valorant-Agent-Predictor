@@ -19,7 +19,7 @@ from threadpoolctl import threadpool_limits
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from dataset import build_map_table  # noqa: E402
+from dataset import live_map_table  # noqa: E402
 from recommend import Classifier, games_with, hide_results, lineup_records, lineup_table, pool_picks  # noqa: E402
 from roles import missing_roles, role, role_counts  # noqa: E402
 from icons import glass_table, lineup_html, map_background, pick_cards  # noqa: E402
@@ -28,7 +28,8 @@ from icons import glass_table, lineup_html, map_background, pick_cards  # noqa: 
 HALF_LIFE_DAYS = 45
 
 # Every season the live recommender learns from. Notebooks 14 and 15 tested the method week by
-# week on the rest of 2025 and on 2026; the app then learns from all of it, as it would in use.
+# week on the rest of 2025 and on 2026; the app then learns from all of it, as it would in use,
+# plus the maps from vlr.gg played after the Kaggle data ends (see live_map_table).
 SEASONS = ["vct_2024", "vct_2025", "vct_2026"]
 
 # 2026's win results were held back for a win-model test that was later dropped, so they're
@@ -55,6 +56,9 @@ EVIDENCE_WINDOW_DAYS = 180
 
 # "Lately", for the most-played view shown before anything is locked in.
 MOST_PLAYED_DAYS = 90
+
+# A map is in the current pool if the pros played it in the last this-many days of data.
+POOL_DAYS = 30
 
 SHOWN = 5           # suggestions listed
 COMMON_SHOWN = 3    # most common full line-ups listed when nothing is locked in
@@ -90,7 +94,7 @@ def record_text(wins: int, known: int) -> str:
 
 @st.cache_data(ttl="12h", show_spinner="Loading every pro line-up since 2024…")
 def load_lineups():
-    maps = pd.concat([build_map_table(season) for season in SEASONS], ignore_index=True)
+    maps = live_map_table(SEASONS)
     records = lineup_records(maps)
     if not SHOW_2026_RESULTS:
         records = hide_results(records, RESULTS_HIDDEN_FROM)
@@ -113,7 +117,10 @@ as_of = data_ends + pd.Timedelta(days=1)
 model = fit_recommender(lineups, as_of)
 
 recent = lineups[lineups["played_at"] >= as_of - pd.Timedelta(days=90)]
-map_names = sorted(lineups["map"].unique())
+# Only the maps pros play now: Riot rotates the pool, and a map that has left it would get
+# suggestions from a meta that has moved on. A month, because the pool can change mid-season:
+# patch 13.04 swapped Breeze for Abyss weeks before Champions 2026.
+map_names = sorted(lineups[lineups["played_at"] >= as_of - pd.Timedelta(days=POOL_DAYS)]["map"].unique())
 default_map = recent["map"].value_counts().idxmax()
 all_agents = model.agents
 
@@ -121,7 +128,7 @@ all_agents = model.agents
 # the widgets are drawn, which is when their values may be set.
 EXAMPLES = {
     "Lotus, nothing locked": ("Lotus", []),
-    "Breeze with Viper, Sova, Harbor, Jett": ("Breeze", ["viper", "sova", "harbor", "jett"]),
+    "Summit with Chamber, Fade, Neon, Sage": ("Summit", ["chamber", "fade", "neon", "sage"]),
 }
 
 

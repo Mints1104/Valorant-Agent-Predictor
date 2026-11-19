@@ -15,7 +15,7 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from dataset import build_map_table  # noqa: E402
+from dataset import live_map_table  # noqa: E402
 from recommend import lineup_table  # noqa: E402
 from icons import agent_path, map_background  # noqa: E402
 
@@ -40,7 +40,7 @@ def display(agent: str) -> str:
 @st.cache_data(ttl="12h", show_spinner="Loading every pro line-up…")
 def monthly_pick_rates() -> pd.DataFrame:
     """Share of line-ups that included each agent, per map per month, plus an all-maps row."""
-    lineups = pd.concat([lineup_table(build_map_table(s)) for s in SEASONS], ignore_index=True)
+    lineups = lineup_table(live_map_table(SEASONS))
     lineups["month"] = lineups["played_at"].dt.to_period("M").dt.to_timestamp()
     both = pd.concat([lineups, lineups.assign(map=ALL_MAPS)], ignore_index=True)
 

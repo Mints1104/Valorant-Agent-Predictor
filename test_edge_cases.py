@@ -14,7 +14,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from dataset import build_map_table, split_season  # noqa: E402
+from dataset import build_map_table, live_map_table, load_vlr_maps, split_season  # noqa: E402
 from dates import load_match_dates  # noqa: E402
 from features import build_features, feature_columns  # noqa: E402
 from form import player_form  # noqa: E402
@@ -107,12 +107,19 @@ raises("a season with no date source says so", lambda: load_match_dates("vct_202
 check("every map has exactly two five-agent line-ups",
       (maps["comp_a"].map(len) == 5).all() and (maps["comp_b"].map(len) == 5).all())
 check("no map is listed twice", not maps.duplicated(["match_id", "map"]).any())
-every = pd.concat([build_map_table(s) for s in ("vct_2024", "vct_2025", "vct_2026")])
+every = live_map_table(["vct_2024", "vct_2025", "vct_2026"])
+newer = load_vlr_maps()
+kaggle_ends = build_map_table("vct_2026")["played_at"].max()
+check("the vlr.gg maps all come after the Kaggle data, each with two five-agent line-ups",
+      (newer["played_at"] > kaggle_ends).all()
+      and (newer["comp_a"].map(len) == 5).all() and (newer["comp_b"].map(len) == 5).all())
+check("no map is listed twice once Kaggle and vlr.gg are combined",
+      not every.duplicated("game_id").any())
 assets = Path(__file__).parent / "assets"
 no_image = sorted({a for comp in list(every["comp_a"]) + list(every["comp_b"]) for a in comp
                    if not (assets / "agents" / f"{a}.png").exists()}
                   | {m for m in every["map"].unique() if not (assets / "maps" / "splash" / f"{m}.jpg").exists()})
-check(f"every agent and map from 2024 to 2026 has an image in assets/ (missing: {no_image or 'none'})",
+check(f"every agent and map the app shows has an image in assets/ (missing: {no_image or 'none'})",
       not no_image)
 
 season_2026 = build_map_table("vct_2026")
@@ -141,10 +148,13 @@ from streamlit.testing.v1 import AppTest  # noqa: E402
 
 at = AppTest.from_file(str(Path(__file__).parent / "streamlit_app.py"), default_timeout=900)
 at.run()
-at.selectbox[0].set_value("Icebox")                      # left the pool before 2026
+offered = at.selectbox(key="map").options
+check("only maps in the current pool are offered: Summit is, Icebox and Breeze aren't",
+      not at.exception and "Summit" in offered and "Icebox" not in offered and "Breeze" not in offered)
+at.selectbox(key="map").set_value("Summit")              # new after the Kaggle data ends
 at.multiselect(key="locked").set_value([])
 at.run()
-check("a map that left the pool shows its last line-ups", not at.exception)
+check("Summit, known only from vlr.gg, shows its line-ups", not at.exception)
 at.multiselect(key="locked").set_value(["jett", "reyna", "neon", "raze"])   # four duelists
 at.run()
 check("a line-up no pro team would play still gets suggestions and no crash", not at.exception)
@@ -157,15 +167,15 @@ at.run()
 check("if all your agents are locked in, it says so and shows everyone",
       not at.exception and any("already locked in" in i.value for i in at.info))
 at.multiselect(key="locked").set_value([])
-at.multiselect(key="mine").set_value(["miks"])           # barely played, and not on this old map
+at.multiselect(key="mine").set_value(["miks"])           # barely played by the pros
 at.run()
 check("nothing locked, with agents the pros didn't play here, doesn't crash", not at.exception)
 at.multiselect(key="mine").set_value([])
-at.button[1].click()                                     # the "Breeze with ..." example button
+at.button[1].click()                                     # the "Summit with ..." example button
 at.run()
 check("the demo example button fills the map and all four agents",
-      not at.exception and at.selectbox(key="map").value == "Breeze" and len(at.multiselect(key="locked").value) == 4)
-check("a line-up with a controller gets no role warning",
+      not at.exception and at.selectbox(key="map").value == "Summit" and len(at.multiselect(key="locked").value) == 4)
+check("finished with the top pick, a controller, the line-up gets no role warning",
       not any("has no" in w.value for w in at.warning))
 at.multiselect(key="locked").set_value(["jett", "raze", "sova", "killjoy"])
 at.multiselect(key="mine").set_value(["neon"])           # only a duelist left to choose

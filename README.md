@@ -11,7 +11,7 @@ they do.
 one click wakes it) · [Slides (PDF)](presentation/Meta_Data.pdf) · built with Python, pandas,
 scikit-learn and Streamlit
 
-![The recommender suggesting a fifth agent on Breeze, each pick shown in the line-up it completes](docs/screenshots/3_suggestions.png)
+![The recommender suggesting a fifth agent on Summit, each pick shown in the line-up it completes](docs/screenshots/3_suggestions.png)
 
 ## The recommender
 
@@ -78,12 +78,20 @@ were measured across every agent, so they don't cover a shortened list.
 | [VCT 2025, all events](https://www.kaggle.com/datasets/piyush86kumar/valorant-vct-2025-all-events) (version 1) | 2025 match dates |
 | [VCT 2024, all events](https://www.kaggle.com/datasets/piyush86kumar/valorant-champions-tour-2024-all-events) (version 3) | 2024 match dates |
 | vlr.gg, read by [`fetch_vlr_dates.py`](fetch_vlr_dates.py) | 2026 match dates (504 of 504 matched on 2025) |
+| vlr.gg, read by [`fetch_vlr_matches.py`](fetch_vlr_matches.py) | The app only: Stage 2 and Champions 2026, played after the Kaggle data ends (702 maps) |
 
 2024 and 2025 (2,376 maps) are for learning, 2026 (886 maps) for testing. 2021–2023 have no
 dates, so they're left out. Once the tests had run, the live app was retrained on all three
 seasons, so it now includes 2026's line-ups. 2026's win results were held back for a test of
 the win model. That test was dropped, so the app now shows them too (`SHOW_2026_RESULTS` in
 `app_pages/recommender.py`). The win model has therefore never been tested on 2026.
+
+The Kaggle data stops at Masters London (June 2026). Stage 2 and Champions came after it, with
+a new map (Summit), a changed pool (Sunset back; Pearl, Bind, Fracture, Corrode and later
+Breeze out) and a different meta: Chamber went from 12% of line-ups to 52% at Champions. So the
+app also reads those 702 maps from vlr.gg match pages. The script was checked first on three
+events Kaggle has (Masters London, China and EMEA Stage 1). All 296 maps matched on every
+column: line-ups, scores, who picked the map, dates. No test in the notebooks uses these maps.
 
 Problems found and fixed (in `src/dataset.py`):
 
@@ -101,9 +109,9 @@ Problems found and fixed (in `src/dataset.py`):
 - It imitates the pros. Nothing here shows its picks win more.
 - Win–loss records in the app reflect the teams too, and the two can't be separated.
 - "No synergy" isn't proof there is none. One season is too small to see a 5-point effect.
-- The app's recommender is trained on games up to Masters London (June 2026), the newest in
-  the dataset. The pros played Miks in only two line-ups in that data, so the app knows Miks
-  but will rarely suggest them.
+- The app's recommender is trained on games up to Champions 2026 (18 October 2026), the end
+  of the season. It offers only the maps played in the last month of that data, the current
+  pool.
 
 ## If it went live
 
@@ -112,7 +120,7 @@ Problems found and fixed (in `src/dataset.py`):
 | Scoring | Real time. Training takes about 20 seconds; after that, each recommendation is instant |
 | Retraining | Weekly, as in the tests: the meta shifts and new agents arrive |
 | Monitoring | Each week, score last week's pro games against the most-played rule and alert if the lead shrinks. Flag any new agent or map, its blind spots |
-| Data | New dates come from vlr.gg (`fetch_vlr_dates.py`). Move the pinned dataset versions on deliberately, re-running `test_form.py` and `test_edge_cases.py` |
+| Data | New matches come from vlr.gg (`fetch_vlr_matches.py`), checked against Kaggle where both have an event. Move the pinned dataset versions on deliberately, re-running `test_form.py` and `test_edge_cases.py` |
 
 ## Run it
 
