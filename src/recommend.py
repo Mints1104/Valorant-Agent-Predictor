@@ -210,8 +210,13 @@ def build_from_scratch(model, map_name: str) -> list[str]:
     return picked
 
 
-def walk_forward(history: pd.DataFrame, to_score: pd.DataFrame, make_model) -> pd.DataFrame:
+def walk_forward(history: pd.DataFrame, to_score: pd.DataFrame, make_model,
+                 retrain_every: int | None = 1) -> pd.DataFrame:
     """Recommend each week of `to_score` using only line-ups played before that week.
+
+    `retrain_every` is in weeks of play: 1 (the default, and every test up to notebook 16)
+    refits before each week; 4 refits before every fourth; None fits once, before the
+    first week, and never again -- a model left as it was shipped.
 
     Returns one row per line-up scored: the rank of each of its five agents when the
     other four are locked in, and how many of its five agents the method would
@@ -220,9 +225,11 @@ def walk_forward(history: pd.DataFrame, to_score: pd.DataFrame, make_model) -> p
     everything = pd.concat([history, to_score], ignore_index=True)
     week_start = to_score["played_at"].dt.to_period("W").dt.start_time
     results = []
-    for start in sorted(week_start.unique()):
-        past = everything[everything["played_at"] < start]
-        model = make_model().fit(past, as_of=start)
+    model = None
+    for number, start in enumerate(sorted(week_start.unique())):
+        if model is None or (retrain_every is not None and number % retrain_every == 0):
+            past = everything[everything["played_at"] < start]
+            model = make_model().fit(past, as_of=start)
         for idx in to_score.index[week_start == start]:
             lineup = to_score.at[idx, "agents"]
             map_name = to_score.at[idx, "map"]

@@ -22,6 +22,7 @@ from model import FINAL_COLUMNS, evaluate, make_final_model  # noqa: E402
 from roles import ROLE, missing_roles, role_counts  # noqa: E402
 from recommend import (  # noqa: E402
     Classifier, CoOccurrence, Popularity, hide_results, lineup_records, lineup_table, pool_picks, rank_of,
+    walk_forward,
 )
 
 
@@ -75,6 +76,18 @@ check("counting methods cope with no history at all (empty ranking, no crash)",
       len(CoOccurrence(21).fit(empty, as_of).scores("Lotus", ["omen"])) == 0)
 raises("the classifier refuses to train on no history, with a clear message",
        lambda: Classifier(45).fit(empty, as_of), ValueError, "no line-ups")
+cut = lineups["played_at"].max() - pd.Timedelta(weeks=8)
+past, later = lineups[lineups["played_at"] < cut], lineups[lineups["played_at"] >= cut]
+weekly = walk_forward(past, later, lambda: Popularity(7))
+check("retraining every week is still the default", weekly.equals(walk_forward(past, later, lambda: Popularity(7), 1)))
+frozen = walk_forward(past, later, lambda: Popularity(7), retrain_every=None)
+monthly = walk_forward(past, later, lambda: Popularity(7), retrain_every=4)
+weeks = sorted(weekly["week"].unique())
+first, fifth = weekly["week"] == weeks[0], weekly["week"] == weeks[4]
+check("a never-retrained model matches the weekly one in its first week, then differs from it",
+      frozen[first].equals(weekly[first]) and not frozen.equals(weekly))
+check("retraining every four weeks matches weekly in weeks 1 and 5, not in between",
+      monthly[first | fifth].equals(weekly[first | fifth]) and not monthly.equals(weekly))
 
 print("\n2. The win model")
 X_agents, y = build_features(learn, feature_columns(maps))
