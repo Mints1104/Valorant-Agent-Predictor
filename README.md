@@ -21,15 +21,20 @@ With four agents locked in, how often the pros' actual fifth pick is in its top 
 |---|---|---|
 | Rest of 2025 (1,032 line-ups) | **91.3%** | 77.3% |
 | 2026, a new season (1,772 line-ups) | **87.4%** | 72.1% |
+| Stage 2 and Champions 2026, a new map and meta (1,404 line-ups) | **89.4%** | 73.7% |
 
-- It leads the most-played rule (the notebooks call it the naive rule) by 14.0 and 15.3
-  points, both with 95% ranges well above zero. It names the pick first 74.8% and 65.7% of
-  the time. Random guessing gets about 13% top-3.
+- It leads the most-played rule (the notebooks call it the naive rule) by 14.0, 15.3 and
+  15.7 points, all with 95% ranges well above zero. It names the pick first 74.8%, 65.7% and
+  67.0% of the time. Random guessing gets about 13% top-3.
+- **It needs fresh games.** Trained once in July and never updated, it scored 81.4% on Stage
+  2 and Champions, 8.0 points behind retraining weekly (range 6.9 to 9.2). The gap grew every
+  month, to 19.5 points by October, when it fell below the most-played rule. Retrained every
+  fourth week, it lost 2.8 points (notebook 17).
 - The fewer agents locked in, the smaller its lead. Measured as how much of the rest of the
   line-up it fills in correctly (development data, not top 3): +1.4 points with one locked,
   +6.7 with two, +12.8 with three, +19.3 with four. With none, the most-played rule is best.
-- Blind spots: a brand-new map (80% on Corrode against 93% elsewhere) and brand-new agents
-  (43% top-3 on 2026's Miks and Veto, from only 77 questions).
+- Blind spots: a brand-new map (80% on Corrode against 93% elsewhere; 81% on Summit against
+  91%) and brand-new agents (43% top-3 on 2026's Miks and Veto, from only 77 questions).
 - Gradient boosting is the headline because a rule set in advance broke a development tie
   with the map × agent classifier. Both were added after the first results, so only the tests
   count. Simple co-occurrence comes within about a point on every test, so most of the gain
@@ -66,8 +71,8 @@ were measured across every agent, so they don't cover a shortened list.
 - **By date, never at random**, so no model learns from the future. The win model learned from
   the 756 maps up to Masters Toronto (June 2025) and was tested on the 516 after it.
 - **Week by week.** The recommender suggests each week using only games played before it.
-- **Written down first.** Test notebooks 12, 14 and 15 were committed before they ran, then run
-  once with identical cells. Nothing was changed after seeing a test result.
+- **Written down first.** Test notebooks 12, 14, 15 and 17 were committed before they ran,
+  then run once with identical cells. Nothing was changed after seeing a test result.
 - **Player form only looks backwards**, which `test_form.py` proves.
 
 ## The data
@@ -78,7 +83,7 @@ were measured across every agent, so they don't cover a shortened list.
 | [VCT 2025, all events](https://www.kaggle.com/datasets/piyush86kumar/valorant-vct-2025-all-events) (version 1) | 2025 match dates |
 | [VCT 2024, all events](https://www.kaggle.com/datasets/piyush86kumar/valorant-champions-tour-2024-all-events) (version 3) | 2024 match dates |
 | vlr.gg, read by [`fetch_vlr_dates.py`](fetch_vlr_dates.py) | 2026 match dates (504 of 504 matched on 2025) |
-| vlr.gg, read by [`fetch_vlr_matches.py`](fetch_vlr_matches.py) | The app only: Stage 2 and Champions 2026, played after the Kaggle data ends (702 maps) |
+| vlr.gg, read by [`fetch_vlr_matches.py`](fetch_vlr_matches.py) | Stage 2 and Champions 2026, played after the Kaggle data ends (702 maps): the app, and notebook 17's test |
 
 2024 and 2025 (2,376 maps) are for learning, 2026 (886 maps) for testing. 2021–2023 have no
 dates, so they're left out. Once the tests had run, the live app was retrained on all three
@@ -91,7 +96,8 @@ a new map (Summit), a changed pool (Sunset back; Pearl, Bind, Fracture, Corrode 
 Breeze out) and a different meta: Chamber went from 12% of line-ups to 52% at Champions. So the
 app also reads those 702 maps from vlr.gg match pages. The script was checked first on three
 events Kaggle has (Masters London, China and EMEA Stage 1). All 296 maps matched on every
-column: line-ups, scores, who picked the map, dates. No test in the notebooks uses these maps.
+column: line-ups, scores, who picked the map, dates. Notebook 17 tests the recommender on
+these maps; the win model has never seen them.
 
 Problems found and fixed (in `src/dataset.py`):
 
@@ -118,7 +124,7 @@ Problems found and fixed (in `src/dataset.py`):
 | | |
 |---|---|
 | Scoring | Real time. Training takes about 20 seconds; after that, each recommendation is instant |
-| Retraining | Weekly, as in the tests: the meta shifts and new agents arrive |
+| Retraining | Weekly, as in the tests: the meta shifts and new agents and maps arrive. Notebook 17 measured it: left alone from July, the model was 19.5 points behind by October; every fourth week cost 2.8 points. The app retrains on each start, so what matters is adding new games |
 | Monitoring | Each week, score last week's pro games against the most-played rule and alert if the lead shrinks. Flag any new agent or map, its blind spots |
 | Data | New matches come from vlr.gg (`fetch_vlr_matches.py`), checked against Kaggle where both have an event. Move the pinned dataset versions on deliberately, re-running `test_form.py` and `test_edge_cases.py` |
 
@@ -168,6 +174,7 @@ Riot's images in `assets/` or the datasets.
 | 14 | Recommender, tested once on the rest of 2025 |
 | 15 | Recommender, tested once on 2026 |
 | 16 | Recommender with one to three agents locked in |
+| 17 | Recommender on Stage 2 and Champions 2026: retrained weekly, every fourth week, or never |
 
 Code is in `src/`, the app in `streamlit_app.py` and `app_pages/`, the slides in
 `presentation/` (PowerPoint, with a PDF copy), and screenshots of every app page in

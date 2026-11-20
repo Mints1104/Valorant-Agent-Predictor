@@ -163,7 +163,8 @@ def build_map_table(season: str = SEASON) -> pd.DataFrame:
 
 # Maps played after the Kaggle dataset ends (Stage 2 and Champions 2026), read from vlr.gg by
 # fetch_vlr_matches.py in the same columns. Checked first on three events Kaggle has: all 296
-# maps matched on every column. Only the app uses them; the notebooks' tests stay on Kaggle.
+# maps matched on every column. The app uses them, and notebook 17 tests the recommender on
+# them; every other notebook uses Kaggle alone.
 VLR_MAPS = Path(__file__).resolve().parent.parent / "data" / "vlr_maps_vct_2026_late.csv"
 
 
@@ -178,8 +179,8 @@ def load_vlr_maps(path: Path = VLR_MAPS) -> pd.DataFrame:
 def live_map_table(seasons: list[str]) -> pd.DataFrame:
     """Every map in these Kaggle seasons, plus the newer ones from vlr.gg: what the app shows.
 
-    A map in both is taken from Kaggle. Not for the notebooks, whose tests were run on the
-    Kaggle data alone.
+    A map in both is taken from Kaggle. Notebook 17 reads the vlr.gg maps separately,
+    as games to score, not history.
     """
     kaggle = pd.concat([build_map_table(season) for season in seasons], ignore_index=True)
     newer = load_vlr_maps()

@@ -43,8 +43,9 @@ order. Every source was scraped from vlr.gg, so they share match IDs, and
 The Kaggle data ends at Masters London (21 June 2026). `vlr_maps_vct_2026_late.csv` holds the
 702 maps played after it, in Stage 2 (all four leagues) and Champions 2026, read from vlr.gg
 match pages by [`fetch_vlr_matches.py`](../fetch_vlr_matches.py) in the same columns as
-`build_map_table`, plus the patch. Only the app reads it (`live_map_table` in
-`src/dataset.py`); the notebooks' tests stay on Kaggle.
+`build_map_table`, plus the patch. The app reads it through `live_map_table` in
+`src/dataset.py`, and notebook 17 scores the recommender on it. Every other notebook uses
+Kaggle alone.
 
 - **Checked against Kaggle first**, on Masters London and China and EMEA Stage 1: all 296
   maps matched on every column.
